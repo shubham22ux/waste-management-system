@@ -114,6 +114,17 @@ export function createSchema() {
       is_read INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS otps (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      target_email TEXT NOT NULL,
+      otp TEXT NOT NULL,
+      role TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      used INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Safe column migration for route_stops.skip_reason
@@ -217,6 +228,22 @@ export function createSchema() {
     }
   } catch (err) {
     // Ignore migration errors
+  }
+
+  // Ensure primary admin account exists
+  try {
+    const adminExists = db.prepare("SELECT id FROM users WHERE email = 'shubhamkumar040605@gmail.com'").get();
+    if (!adminExists) {
+      const defaultAdmin = db.prepare("SELECT password_hash FROM users WHERE role = 'admin' LIMIT 1").get();
+      const hash = defaultAdmin ? defaultAdmin.password_hash : '$2a$10$7zB9yB1P7Q47aE7f0bO41O0e1R/aM8XJ3H7kR1yGzH7cZ8kL1vK6O';
+      db.prepare(`
+        INSERT INTO users (name, email, password_hash, role, phone)
+        VALUES ('Shubham Kumar (Admin)', 'shubhamkumar040605@gmail.com', ?, 'admin', '+91 98765 00001')
+      `).run(hash);
+      console.log("[Database] Initialized primary admin account: shubhamkumar040605@gmail.com");
+    }
+  } catch (err) {
+    console.error('Failed to initialize admin account:', err.message);
   }
 
   console.log('[Database] Schema created/verified successfully.');

@@ -36,6 +36,39 @@ export function AuthProvider({ children }) {
     verifyUser();
   }, [token]);
 
+  const requestLoginOtp = async (email, password = null) => {
+    const res = await fetch('/api/auth/request-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to dispatch verification code.');
+    }
+    return data;
+  };
+
+  const verifyLoginOtp = async (email, otp) => {
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Invalid or expired verification code.');
+    }
+
+    setToken(data.token);
+    setUser(data.user);
+    localStorage.setItem('smartwaste_token', data.token);
+    localStorage.setItem('smartwaste_user', JSON.stringify(data.user));
+    return data.user;
+  };
+
   const login = async (email, password) => {
     const res = await fetch('/api/auth/login', {
       method: 'POST',
@@ -46,6 +79,10 @@ export function AuthProvider({ children }) {
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || 'Login failed.');
+    }
+
+    if (data.requireOtp) {
+      return data;
     }
 
     setToken(data.token);
@@ -82,7 +119,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, requestLoginOtp, verifyLoginOtp, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
