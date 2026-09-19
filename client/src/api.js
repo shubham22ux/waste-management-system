@@ -42,3 +42,22 @@ export async function apiFetch(endpoint, options = {}) {
 
   return response;
 }
+
+export async function safeParseJson(response, defaultMsg = 'Request failed') {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const rawText = await response.text();
+    if (rawText.includes('<!doctype') || rawText.includes('<html') || rawText.includes('<!DOCTYPE')) {
+      throw new Error(
+        'Backend API is not reachable on this domain. If hosted on AWS Amplify, please configure VITE_API_URL in your Amplify Environment Variables to point to your live backend server.'
+      );
+    }
+    try {
+      return JSON.parse(rawText);
+    } catch {
+      throw new Error(rawText || defaultMsg);
+    }
+  }
+  return response.json();
+}
+

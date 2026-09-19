@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { apiFetch } from '../api';
+import { apiFetch, getApiUrl, safeParseJson } from '../api';
 
 const AuthContext = createContext(null);
 
@@ -17,7 +17,7 @@ export function AuthProvider({ children }) {
         try {
           const res = await apiFetch('/api/auth/me');
           if (res.ok) {
-            const userData = await res.json();
+            const userData = await safeParseJson(res);
             setUser(userData);
             localStorage.setItem('smartwaste_user', JSON.stringify(userData));
           } else {
@@ -37,13 +37,13 @@ export function AuthProvider({ children }) {
   }, [token]);
 
   const requestLoginOtp = async (email, password = null) => {
-    const res = await fetch('/api/auth/request-otp', {
+    const res = await fetch(getApiUrl('/api/auth/request-otp'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
+    const data = await safeParseJson(res, 'Failed to dispatch verification code.');
     if (!res.ok) {
       throw new Error(data.error || 'Failed to dispatch verification code.');
     }
@@ -51,13 +51,13 @@ export function AuthProvider({ children }) {
   };
 
   const verifyLoginOtp = async (email, otp) => {
-    const res = await fetch('/api/auth/verify-otp', {
+    const res = await fetch(getApiUrl('/api/auth/verify-otp'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, otp })
     });
 
-    const data = await res.json();
+    const data = await safeParseJson(res, 'Invalid or expired verification code.');
     if (!res.ok) {
       throw new Error(data.error || 'Invalid or expired verification code.');
     }
@@ -70,13 +70,13 @@ export function AuthProvider({ children }) {
   };
 
   const login = async (email, password) => {
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(getApiUrl('/api/auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
 
-    const data = await res.json();
+    const data = await safeParseJson(res, 'Login failed.');
     if (!res.ok) {
       throw new Error(data.error || 'Login failed.');
     }
@@ -93,13 +93,13 @@ export function AuthProvider({ children }) {
   };
 
   const register = async (name, email, password, phone) => {
-    const res = await fetch('/api/auth/register', {
+    const res = await fetch(getApiUrl('/api/auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, phone })
     });
 
-    const data = await res.json();
+    const data = await safeParseJson(res, 'Registration failed.');
     if (!res.ok) {
       throw new Error(data.error || 'Registration failed.');
     }
