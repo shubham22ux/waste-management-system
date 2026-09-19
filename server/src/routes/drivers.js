@@ -325,6 +325,16 @@ router.post('/', authenticateToken, requireRole('admin'), (req, res) => {
 
     saveDriverToMongo(created);
 
+    // Auto-approve this driver's email
+    try {
+      db.prepare(`
+        INSERT OR IGNORE INTO approved_driver_emails (email, name, approved_by, is_active)
+        VALUES (?, ?, ?, 1)
+      `).run(email.trim().toLowerCase(), name.trim(), req.user.id);
+    } catch (approveErr) {
+      console.warn('Auto-approve driver email warning:', approveErr.message);
+    }
+
     res.status(201).json({
       message: `Driver account created successfully for ${created.name}`,
       driver: created,
@@ -499,6 +509,99 @@ router.delete('/:id', authenticateToken, requireRole('admin'), (req, res) => {
     }
 
     res.json({ message: 'Driver and associated user account deleted successfully', id: Number(driverId) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════════════
+// Approved Driver Emails Management (Admin Only)
+// ════════════════════════════════════════════════════════════════════════
+
+// GET /api/drivers/approved-emails - List all approved driver emails
+router.get('/approved-emails', authenticateToken, requireRole('admin'), (req, res) => {
+  try {
+    const approvedEmails = db.prepare(`
+      SELECT ade.*, u.name AS approved_by_name
+      FROM approved_driver_emails ade
+      LEFT JOIN users u ON ade.approved_by = u.id
+      ORDER BY ade.approved_at DESC
+    `).all();
+    res.json(approvedEmails);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/drivers/approved-emails - Add a new approved driver email
+router.post('/approved-emails', authenticateToken, requireRole('admin'), (req, res) => {
+  try {
+    const { email, name } = req.body;
+
+    if (!email || !email.trim()) {
+      return res.status(400).json({ error: 'Email address is required.' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Check if already exists
+    const existing = db.prepare('SELECT * FROM approved_driver_emails WHERE email = ?').get(normalizedEmail);
+    if (existing) {
+      if (!existing.is_active) {
+        // Re-activate
+        db.prepare('UPDATE approved_driver_emails SET is_active = 1, name = ?, approved_by = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?')
+          .run(name ? name.trim() : existing.name, req.user.id, existing.id);
+        const updated = db.prepare('SELECT * FROM approved_driver_emails WHERE id = ?').get(existing.id);
+        return res.json({ message: 'Driver email re-activated.', approvedEmail: updated });
+      }
+      return res.status(400).json({ error: 'This email is already approved.' });
+    }
+
+    const info = db.prepare(`
+      INSERT INTO approved_driver_emails (email, name, approved_by, is_active)
+      VALUES (?, ?, ?, 1)
+    `).run(normalizedEmail, name ? name.trim() : null, req.user.id);
+
+    const created = db.prepare('SELECT * FROM approved_driver_emails WHERE id = ?').get(info.lastInsertRowid);
+    res.status(201).json({ message: 'Driver email approved successfully.', approvedEmail: created });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT /api/drivers/approved-emails/:id - Toggle active status
+router.put('/approved-emails/:id', authenticateToken, requireRole('admin'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = db.prepare('SELECT * FROM approved_driver_emails WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Approved email record not found.' });
+    }
+
+    const newStatus = existing.is_active ? 0 : 1;
+    db.prepare('UPDATE approved_driver_emails SET is_active = ? WHERE id = ?').run(newStatus, id);
+
+    const updated = db.prepare('SELECT * FROM approved_driver_emails WHERE id = ?').get(id);
+    res.json({
+      message: newStatus ? 'Driver email activated.' : 'Driver email deactivated.',
+      approvedEmail: updated
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /api/drivers/approved-emails/:id - Remove approved driver email
+router.delete('/approved-emails/:id', authenticateToken, requireRole('admin'), (req, res) => {
+  try {
+    const { id } = req.params;
+    const existing = db.prepare('SELECT * FROM approved_driver_emails WHERE id = ?').get(id);
+    if (!existing) {
+      return res.status(404).json({ error: 'Approved email record not found.' });
+    }
+
+    db.prepare('DELETE FROM approved_driver_emails WHERE id = ?').run(id);
+    res.json({ message: 'Driver email approval removed.', id: Number(id) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

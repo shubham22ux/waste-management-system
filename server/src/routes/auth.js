@@ -1,6 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import db from '../db/index.js';
 import { JWT_SECRET, authenticateToken } from '../middleware/auth.js';
 import { saveUserToMongo } from '../services/mongoSync.js';
@@ -8,10 +9,15 @@ import { sendOtpEmail } from '../services/emailService.js';
 
 const router = express.Router();
 
-const ADMIN_DESTINATION_EMAIL = process.env.ADMIN_NOTIFICATION_EMAIL || 'shubhamkumar040605@gmail.com';
+const ADMIN_EMAIL = (process.env.ADMIN_NOTIFICATION_EMAIL || 'shubhamkumar040605@gmail.com').toLowerCase();
+
+// Temp token secret for OTP flow (separate from JWT_SECRET for isolation)
+const TEMP_TOKEN_SECRET = process.env.JWT_SECRET
+  ? process.env.JWT_SECRET + '_otp_temp'
+  : 'smartwaste_temp_otp_secret_2026';
 
 /**
- * Masks an email for safe display (e.g. shubhamkumar040605@gmail.com -> s***5@gmail.com)
+ * Masks an email for safe display (e.g. shubhamkumar040605@gmail.com -> sh***5@gmail.com)
  */
 function maskEmail(email) {
   if (!email || !email.includes('@')) return email;
@@ -20,6 +26,32 @@ function maskEmail(email) {
   const first = local.slice(0, 2);
   const last = local.slice(-1);
   return `${first}${'*'.repeat(Math.max(local.length - 3, 3))}${last}@${domain}`;
+}
+
+/**
+ * Generates a temporary token for OTP verification step.
+ * This token is short-lived (10 minutes) and encodes the user's email and role
+ * so the OTP verification step can confirm identity.
+ */
+function generateTempToken(email, role) {
+  return jwt.sign(
+    { email, role, purpose: 'otp_verification' },
+    TEMP_TOKEN_SECRET,
+    { expiresIn: '10m' }
+  );
+}
+
+/**
+ * Verifies a temp token and returns decoded payload or null.
+ */
+function verifyTempToken(token) {
+  try {
+    const decoded = jwt.verify(token, TEMP_TOKEN_SECRET);
+    if (decoded.purpose !== 'otp_verification') return null;
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
 // POST /api/auth/register - Citizen Self-Registration
@@ -71,86 +103,144 @@ router.post('/register', (req, res) => {
   }
 });
 
-// POST /api/auth/request-otp - Generates and dispatches OTP for login
-router.post('/request-otp', async (req, res) => {
+// POST /api/auth/login - Unified login endpoint with role-separated behavior
+//
+// Flow:
+//   CITIZEN  → password check → direct JWT token (no OTP)
+//   ADMIN    → password check → OTP sent ONLY to shubhamkumar040605@gmail.com → returns tempToken + requireOtp
+//   DRIVER   → password check → check approved_driver_emails → OTP sent to driver email → returns tempToken + requireOtp
+router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: 'Email address is required.' });
+      return res.status(400).json({ error: 'Email is required.' });
+    }
+    if (!password) {
+      return res.status(400).json({ error: 'Email and password are required.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // Look up user account
+    // Look up user
     let user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedEmail);
 
-    // Fallback: If user entered default admin address or admin shubham email
-    if (!user && (normalizedEmail === 'admin@smartwaste.gov' || normalizedEmail === ADMIN_DESTINATION_EMAIL.toLowerCase())) {
+    // Fallback: admin login aliases
+    if (!user && (normalizedEmail === 'admin@smartwaste.gov' || normalizedEmail === ADMIN_EMAIL)) {
       user = db.prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1").get();
     }
 
     if (!user) {
-      return res.status(404).json({
-        error: 'No account registered with this email. If you are a driver, please contact your Municipal Admin to register your email.'
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // Verify password
+    const isMatch = bcrypt.compareSync(password, user.password_hash);
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid email or password.' });
+    }
+
+    // ─── CITIZEN: Direct login (no OTP) ───
+    if (user.role === 'citizen') {
+      const userPayload = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone
+      };
+      const token = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '7d' });
+      return res.json({ token, user: userPayload });
+    }
+
+    // ─── ADMIN: OTP only to admin email ───
+    if (user.role === 'admin') {
+      // Admin can ONLY be the designated email
+      if (user.email.toLowerCase() !== ADMIN_EMAIL && normalizedEmail !== ADMIN_EMAIL && normalizedEmail !== 'admin@smartwaste.gov') {
+        return res.status(403).json({ error: 'Admin login is restricted to the designated municipal administrator email.' });
+      }
+
+      const targetEmail = ADMIN_EMAIL;
+
+      // Expire old OTPs
+      db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
+
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      db.prepare(`
+        INSERT INTO otps (email, target_email, otp, role, expires_at)
+        VALUES (?, ?, ?, 'admin', datetime('now', '+10 minutes'))
+      `).run(user.email, targetEmail, otp);
+
+      // Send OTP email
+      await sendOtpEmail({ to: targetEmail, otp, role: 'admin', userName: user.name });
+
+      // Generate temp token
+      const tempToken = generateTempToken(user.email, 'admin');
+
+      return res.json({
+        requireOtp: true,
+        tempToken,
+        email: user.email,
+        maskedEmail: maskEmail(targetEmail),
+        role: 'admin',
+        message: `A 6-digit verification code has been sent to ${maskEmail(targetEmail)}.`
       });
     }
 
-    // If password was supplied, verify it
-    if (password) {
-      const isMatch = bcrypt.compareSync(password, user.password_hash);
-      if (!isMatch) {
-        return res.status(401).json({ error: 'Invalid password. Please check your credentials.' });
+    // ─── DRIVER: Check approval, then OTP to driver email ───
+    if (user.role === 'driver') {
+      // Check if driver email is approved by admin
+      const approved = db.prepare(
+        'SELECT * FROM approved_driver_emails WHERE email = ? AND is_active = 1'
+      ).get(user.email.toLowerCase());
+
+      if (!approved) {
+        return res.status(403).json({
+          error: 'Your email has not been approved by the administrator. Please contact your Municipal Admin to approve your email for login.'
+        });
       }
+
+      const targetEmail = user.email;
+
+      // Expire old OTPs
+      db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
+
+      // Generate OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      db.prepare(`
+        INSERT INTO otps (email, target_email, otp, role, expires_at)
+        VALUES (?, ?, ?, 'driver', datetime('now', '+10 minutes'))
+      `).run(user.email, targetEmail, otp);
+
+      // Send OTP email
+      await sendOtpEmail({ to: targetEmail, otp, role: 'driver', userName: user.name });
+
+      // Generate temp token
+      const tempToken = generateTempToken(user.email, 'driver');
+
+      return res.json({
+        requireOtp: true,
+        tempToken,
+        email: user.email,
+        maskedEmail: maskEmail(targetEmail),
+        role: 'driver',
+        message: `A 6-digit verification code has been sent to ${maskEmail(targetEmail)}.`
+      });
     }
 
-    // Determine target recipient email strictly per business rules:
-    // 1. Admin OTP always goes to shubhamkumar040605@gmail.com
-    // 2. Driver OTP goes to the driver's registered email (provided by admin)
-    // 3. Citizen OTP goes to the citizen's registered email
-    let targetEmail = user.email;
-    if (user.role === 'admin' || normalizedEmail === ADMIN_DESTINATION_EMAIL.toLowerCase() || normalizedEmail === 'admin@smartwaste.gov') {
-      targetEmail = ADMIN_DESTINATION_EMAIL;
-    }
-
-    // Expire any existing pending OTPs for this account
-    db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
-
-    // Generate cryptographically random 6-digit numeric OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Save to otps table (valid for 10 minutes)
-    db.prepare(`
-      INSERT INTO otps (email, target_email, otp, role, expires_at)
-      VALUES (?, ?, ?, ?, datetime('now', '+10 minutes'))
-    `).run(user.email, targetEmail, otp, user.role);
-
-    // Dispatch OTP via email service
-    await sendOtpEmail({
-      to: targetEmail,
-      otp,
-      role: user.role,
-      userName: user.name
-    });
-
-    res.json({
-      success: true,
-      requireOtp: true,
-      email: user.email,
-      maskedEmail: maskEmail(targetEmail),
-      role: user.role,
-      message: `A 6-digit verification code has been dispatched to ${maskEmail(targetEmail)}.`
-    });
+    // Fallback (should not reach here)
+    return res.status(403).json({ error: 'Unknown role. Access denied.' });
   } catch (err) {
-    console.error('Request OTP error:', err);
+    console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/auth/verify-otp - Verifies the 6-digit OTP and authenticates user
+// POST /api/auth/verify-otp - Verifies the 6-digit OTP using the temp token
 router.post('/verify-otp', (req, res) => {
   try {
-    const { email, otp } = req.body;
+    const { email, otp, tempToken } = req.body;
 
     if (!email || !otp) {
       return res.status(400).json({ error: 'Both email and 6-digit OTP are required.' });
@@ -158,6 +248,18 @@ router.post('/verify-otp', (req, res) => {
 
     const normalizedEmail = email.trim().toLowerCase();
     const cleanOtp = otp.toString().trim();
+
+    // Verify temp token if provided (recommended for security)
+    if (tempToken) {
+      const decoded = verifyTempToken(tempToken);
+      if (!decoded) {
+        return res.status(401).json({ error: 'Session expired. Please log in again from the credentials step.' });
+      }
+      // Ensure the temp token email matches the OTP request email
+      if (decoded.email.toLowerCase() !== normalizedEmail) {
+        return res.status(401).json({ error: 'Session mismatch. Please log in again.' });
+      }
+    }
 
     // Find valid matching OTP
     const otpRecord = db.prepare(`
@@ -212,116 +314,70 @@ router.post('/verify-otp', (req, res) => {
   }
 });
 
-// POST /api/auth/login - Legacy / Password-initiated login (triggers OTP step for Admin and Driver)
-router.post('/login', async (req, res) => {
+// POST /api/auth/request-otp - Resend OTP (used for the "Resend OTP" button)
+router.post('/request-otp', async (req, res) => {
   try {
-    const { email, password, otp } = req.body;
+    const { email, password } = req.body;
 
     if (!email) {
-      return res.status(400).json({ error: 'Email is required.' });
+      return res.status(400).json({ error: 'Email address is required.' });
     }
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // If OTP is already supplied in this request, verify it directly
-    if (otp) {
-      const cleanOtp = otp.toString().trim();
-      const otpRecord = db.prepare(`
-        SELECT * FROM otps
-        WHERE (email = ? OR target_email = ?)
-          AND otp = ?
-          AND used = 0
-          AND expires_at > datetime('now')
-        ORDER BY id DESC LIMIT 1
-      `).get(normalizedEmail, normalizedEmail, cleanOtp);
-
-      if (!otpRecord) {
-        return res.status(400).json({ error: 'Invalid or expired OTP code.' });
-      }
-
-      db.prepare('UPDATE otps SET used = 1 WHERE id = ?').run(otpRecord.id);
-
-      let user = db.prepare('SELECT * FROM users WHERE email = ?').get(otpRecord.email);
-      if (!user) {
-        user = db.prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1").get();
-      }
-
-      const userPayload = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone
-      };
-
-      const token = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ token, user: userPayload });
-    }
-
-    // Otherwise check password
-    if (!password) {
-      return res.status(400).json({ error: 'Email and password (or OTP) are required.' });
-    }
-
+    // Look up user account
     let user = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedEmail);
-    if (!user && (normalizedEmail === 'admin@smartwaste.gov' || normalizedEmail === ADMIN_DESTINATION_EMAIL.toLowerCase())) {
+    if (!user && (normalizedEmail === 'admin@smartwaste.gov' || normalizedEmail === ADMIN_EMAIL)) {
       user = db.prepare("SELECT * FROM users WHERE role = 'admin' LIMIT 1").get();
     }
 
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
+      return res.status(404).json({
+        error: 'No account registered with this email.'
+      });
     }
 
-    const isMatch = bcrypt.compareSync(password, user.password_hash);
-    if (!isMatch) {
-      return res.status(401).json({ error: 'Invalid email or password.' });
-    }
-
-    // Role requires OTP verification:
-    // Admin & Driver mandate OTP email verification.
-    if (user.role === 'admin' || user.role === 'driver') {
-      let targetEmail = user.email;
-      if (user.role === 'admin' || normalizedEmail === ADMIN_DESTINATION_EMAIL.toLowerCase() || normalizedEmail === 'admin@smartwaste.gov') {
-        targetEmail = ADMIN_DESTINATION_EMAIL;
+    // If password was supplied, verify it
+    if (password) {
+      const isMatch = bcrypt.compareSync(password, user.password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ error: 'Invalid password.' });
       }
-
-      db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-      db.prepare(`
-        INSERT INTO otps (email, target_email, otp, role, expires_at)
-        VALUES (?, ?, ?, ?, datetime('now', '+10 minutes'))
-      `).run(user.email, targetEmail, generatedOtp, user.role);
-
-      await sendOtpEmail({
-        to: targetEmail,
-        otp: generatedOtp,
-        role: user.role,
-        userName: user.name
-      });
-
-      return res.json({
-        requireOtp: true,
-        email: user.email,
-        maskedEmail: maskEmail(targetEmail),
-        role: user.role,
-        message: `Verification code dispatched to ${maskEmail(targetEmail)}.`
-      });
     }
 
-    // Citizen direct password fallback
-    const userPayload = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone
-    };
+    // Determine target email
+    let targetEmail = user.email;
+    if (user.role === 'admin') {
+      targetEmail = ADMIN_EMAIL;
+    }
 
-    const token = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, user: userPayload });
+    // Expire old OTPs
+    db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
+
+    // Generate OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    db.prepare(`
+      INSERT INTO otps (email, target_email, otp, role, expires_at)
+      VALUES (?, ?, ?, ?, datetime('now', '+10 minutes'))
+    `).run(user.email, targetEmail, otpCode, user.role);
+
+    // Send OTP email
+    await sendOtpEmail({ to: targetEmail, otp: otpCode, role: user.role, userName: user.name });
+
+    // Generate fresh temp token
+    const tempToken = generateTempToken(user.email, user.role);
+
+    res.json({
+      success: true,
+      requireOtp: true,
+      tempToken,
+      email: user.email,
+      maskedEmail: maskEmail(targetEmail),
+      role: user.role,
+      message: `A 6-digit verification code has been dispatched to ${maskEmail(targetEmail)}.`
+    });
   } catch (err) {
-    console.error('Login error:', err);
+    console.error('Request OTP error:', err);
     res.status(500).json({ error: err.message });
   }
 });

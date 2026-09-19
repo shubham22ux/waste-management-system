@@ -11,6 +11,7 @@ import {
   MessageSquareWarning,
   Recycle,
   User,
+  UserCheck,
   Bell,
   MapPin,
   FileText,
@@ -29,6 +30,7 @@ const adminNavigation = [
   { name: 'Fuel Analytics', path: '/fuel-analytics', icon: Fuel },
   { name: 'Operations Analytics', path: '/operations-analytics', icon: BarChart3 },
   { name: 'Complaints', path: '/complaints', icon: MessageSquareWarning },
+  { name: 'Approve Drivers', path: '/driver-approvals', icon: UserCheck },
 ];
 
 const driverNavigation = [

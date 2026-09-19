@@ -125,6 +125,15 @@ export function createSchema() {
       used INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS approved_driver_emails (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT UNIQUE NOT NULL,
+      name TEXT,
+      approved_by INTEGER REFERENCES users(id),
+      approved_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      is_active INTEGER DEFAULT 1
+    );
   `);
 
   // Safe column migration for route_stops.skip_reason
@@ -244,6 +253,31 @@ export function createSchema() {
     }
   } catch (err) {
     console.error('Failed to initialize admin account:', err.message);
+  }
+
+  // Auto-approve any existing driver emails that aren't already in approved_driver_emails
+  try {
+    const existingDriverEmails = db.prepare(`
+      SELECT u.email, u.name, u.id
+      FROM users u
+      JOIN drivers d ON d.user_id = u.id
+      WHERE u.role = 'driver'
+    `).all();
+
+    const insertApproval = db.prepare(`
+      INSERT OR IGNORE INTO approved_driver_emails (email, name, approved_by, is_active)
+      VALUES (?, ?, (SELECT id FROM users WHERE role = 'admin' LIMIT 1), 1)
+    `);
+
+    for (const driver of existingDriverEmails) {
+      insertApproval.run(driver.email, driver.name);
+    }
+
+    if (existingDriverEmails.length > 0) {
+      console.log(`[Database] Auto-approved ${existingDriverEmails.length} existing driver email(s).`);
+    }
+  } catch (err) {
+    console.error('Failed to auto-approve driver emails:', err.message);
   }
 
   console.log('[Database] Schema created/verified successfully.');

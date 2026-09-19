@@ -12,7 +12,8 @@ import {
   KeyRound,
   RefreshCw,
   CheckCircle2,
-  Lock
+  Lock,
+  Users
 } from 'lucide-react';
 
 export default function Login() {
@@ -22,6 +23,7 @@ export default function Login() {
   const [step, setStep] = useState('credentials'); // 'credentials' | 'otp'
   const [maskedEmail, setMaskedEmail] = useState('');
   const [targetRole, setTargetRole] = useState('');
+  const [tempToken, setTempToken] = useState('');
   const [error, setError] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -49,7 +51,7 @@ export default function Login() {
     }
   };
 
-  // Step 1: Submit Credentials & Dispatch OTP
+  // Step 1: Submit Credentials
   const handleSubmitCredentials = async (e) => {
     e.preventDefault();
     setError('');
@@ -68,10 +70,12 @@ export default function Login() {
       if (res && res.requireOtp) {
         setMaskedEmail(res.maskedEmail || email);
         setTargetRole(res.role || '');
+        setTempToken(res.tempToken || '');
         setStep('otp');
         setResendCooldown(30);
         setInfoMessage(res.message || 'Verification code sent to your registered email.');
       } else if (res && res.id) {
+        // Citizen direct login
         redirectByRole(res);
       }
     } catch (err) {
@@ -95,7 +99,7 @@ export default function Login() {
 
     try {
       setSubmitting(true);
-      const user = await verifyLoginOtp(email.trim(), cleanOtp);
+      const user = await verifyLoginOtp(email.trim(), cleanOtp, tempToken);
       redirectByRole(user);
     } catch (err) {
       setError(err.message);
@@ -114,6 +118,7 @@ export default function Login() {
       setSubmitting(true);
       const res = await requestLoginOtp(email.trim(), password);
       setMaskedEmail(res.maskedEmail || email);
+      setTempToken(res.tempToken || '');
       setResendCooldown(30);
       setInfoMessage(`A fresh 6-digit code has been dispatched to ${res.maskedEmail || 'your email'}.`);
     } catch (err) {
@@ -126,6 +131,7 @@ export default function Login() {
   const handleBackToCredentials = () => {
     setStep('credentials');
     setOtp('');
+    setTempToken('');
     setError('');
     setInfoMessage('');
   };
@@ -181,10 +187,6 @@ export default function Login() {
                     required
                   />
                 </div>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <Shield className="h-3 w-3 text-teal-600" />
-                  <span>Admin OTP routes to shubhamkumar040605@gmail.com</span>
-                </div>
               </div>
 
               <div>
@@ -202,9 +204,27 @@ export default function Login() {
                     required
                   />
                 </div>
-                <div className="mt-1 flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <Truck className="h-3 w-3 text-teal-600" />
-                  <span>Drivers must use the email provided by Municipal Admin</span>
+              </div>
+
+              {/* Role Info Cards */}
+              <div className="space-y-2 pt-1">
+                <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span className="text-[11px] text-slate-500">
+                    <strong className="text-slate-700">Admin:</strong> OTP sent to designated admin inbox
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <Truck className="h-4 w-4 text-teal-600 shrink-0" />
+                  <span className="text-[11px] text-slate-500">
+                    <strong className="text-slate-700">Driver:</strong> Must be approved by admin, OTP sent to driver email
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <Users className="h-4 w-4 text-blue-600 shrink-0" />
+                  <span className="text-[11px] text-slate-500">
+                    <strong className="text-slate-700">Citizen:</strong> Direct login with password (no OTP)
+                  </span>
                 </div>
               </div>
 
@@ -213,7 +233,7 @@ export default function Login() {
                 disabled={submitting}
                 className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-xl text-sm shadow-lg shadow-emerald-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
               >
-                <span>{submitting ? 'Verifying...' : 'Sign In with OTP Verification'}</span>
+                <span>{submitting ? 'Verifying...' : 'Sign In'}</span>
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
@@ -293,7 +313,7 @@ export default function Login() {
               </Link>
             </p>
             <p className="text-[11px] text-slate-400">
-              For security, Admin OTP is restricted to authorized municipal inbox.
+              Admin & Driver logins require OTP verification for security.
             </p>
           </div>
         </div>

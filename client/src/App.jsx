@@ -17,6 +17,7 @@ import Vehicles from './pages/Vehicles';
 import FuelAnalytics from './pages/FuelAnalytics';
 import OperationsAnalytics from './pages/OperationsAnalytics';
 import Complaints from './pages/Complaints';
+import DriverApproval from './pages/DriverApproval';
 
 // Driver Pages
 import DriverRoutes from './pages/driver/DriverRoutes';
@@ -104,6 +105,7 @@ export default function App() {
                 <Route path="/operations-analytics" element={<OperationsAnalytics />} />
                 <Route path="/analytics" element={<OperationsAnalytics />} />
                 <Route path="/complaints" element={<Complaints />} />
+                <Route path="/driver-approvals" element={<DriverApproval />} />
               </Route>
 
               {/* Driver Protected Routes */}
