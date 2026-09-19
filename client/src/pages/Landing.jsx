@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Recycle,
@@ -18,30 +18,11 @@ import {
   TrendingUp,
   Key,
   Users,
-  Send,
-  Zap
+  Send
 } from 'lucide-react';
 
 export default function Landing() {
-  const { user, login } = useAuth();
-  const navigate = useNavigate();
-  const [demoLoading, setDemoLoading] = useState('');
-
-  const handleQuickLogin = async (email, role) => {
-    try {
-      setDemoLoading(role);
-      const res = await login(email, 'password123');
-      if (res.success) {
-        if (role === 'admin') navigate('/');
-        else if (role === 'driver') navigate('/driver/routes');
-        else if (role === 'citizen') navigate('/citizen/bins');
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setDemoLoading('');
-    }
-  };
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 selection:bg-teal-500 selection:text-white flex flex-col font-sans">
@@ -129,51 +110,30 @@ export default function Landing() {
             </Link>
           </div>
 
-          {/* One-Click Demo Role Launcher */}
+          {/* Dedicated Role-Based Architecture Overview */}
           <div className="mt-12 p-5 bg-slate-900/70 border border-slate-800 rounded-2xl max-w-3xl mx-auto shadow-2xl">
             <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-300 mb-3">
-              <Zap className="h-4 w-4 text-amber-400" />
-              One-Click Instant Demo Authentication (password: password123)
+              <ShieldCheck className="h-4 w-4 text-teal-400" />
+              Dedicated Role-Based Portals
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@smartwaste.gov', 'admin')}
-                disabled={!!demoLoading}
-                className="p-3 rounded-xl bg-slate-800/90 hover:bg-emerald-950/80 border border-emerald-500/30 hover:border-emerald-500/60 text-left transition-all group cursor-pointer"
-              >
-                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Admin Role</div>
-                <div className="text-xs font-bold text-white group-hover:text-emerald-300">
-                  {demoLoading === 'admin' ? 'Logging in...' : 'admin@smartwaste.gov'}
-                </div>
-                <div className="text-[10px] text-slate-400 mt-1">Full Dispatch & Analytics</div>
-              </button>
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-emerald-500/20 text-left">
+                <div className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Admin Portal</div>
+                <div className="text-xs font-bold text-white mt-0.5">Municipal Dispatcher</div>
+                <div className="text-[10px] text-slate-400 mt-1">Fleet routing, live telemetry & analytics</div>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('driver1@smartwaste.gov', 'driver')}
-                disabled={!!demoLoading}
-                className="p-3 rounded-xl bg-slate-800/90 hover:bg-teal-950/80 border border-teal-500/30 hover:border-teal-500/60 text-left transition-all group cursor-pointer"
-              >
-                <div className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Driver Role</div>
-                <div className="text-xs font-bold text-white group-hover:text-teal-300">
-                  {demoLoading === 'driver' ? 'Logging in...' : 'driver1@smartwaste.gov'}
-                </div>
-                <div className="text-[10px] text-slate-400 mt-1">Mobile Route Portal</div>
-              </button>
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-teal-500/20 text-left">
+                <div className="text-[10px] font-bold text-teal-400 uppercase tracking-wider">Driver Portal</div>
+                <div className="text-xs font-bold text-white mt-0.5">Sanitation Field Crew</div>
+                <div className="text-[10px] text-slate-400 mt-1">Live pickup navigation & fuel logs</div>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('citizen1@gmail.com', 'citizen')}
-                disabled={!!demoLoading}
-                className="p-3 rounded-xl bg-slate-800/90 hover:bg-cyan-950/80 border border-cyan-500/30 hover:border-cyan-500/60 text-left transition-all group cursor-pointer"
-              >
-                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Citizen Role</div>
-                <div className="text-xs font-bold text-white group-hover:text-cyan-300">
-                  {demoLoading === 'citizen' ? 'Logging in...' : 'citizen1@gmail.com'}
-                </div>
-                <div className="text-[10px] text-slate-400 mt-1">Grievances & Map</div>
-              </button>
+              <div className="p-3.5 rounded-xl bg-slate-800/60 border border-cyan-500/20 text-left">
+                <div className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Citizen Portal</div>
+                <div className="text-xs font-bold text-white mt-0.5">Public Community</div>
+                <div className="text-[10px] text-slate-400 mt-1">Bin finder & photo grievance redressal</div>
+              </div>
             </div>
           </div>
         </div>

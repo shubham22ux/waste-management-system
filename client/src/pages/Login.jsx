@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Recycle, Shield, Truck, User, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
+import { Recycle, ArrowRight, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -38,12 +38,6 @@ export default function Login() {
     }
   };
 
-  const handleQuickLogin = (demoEmail) => {
-    setEmail(demoEmail);
-    setPassword('password123');
-    setError('');
-  };
-
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
@@ -77,6 +71,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="name@smartwaste.gov"
+                autoComplete="email"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                 required
               />
@@ -91,6 +86,7 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:bg-white focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
                 required
               />
@@ -105,49 +101,6 @@ export default function Login() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
-
-          {/* Quick Demo Login Preset Buttons */}
-          <div className="pt-3 border-t border-slate-100">
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <KeyRound className="h-3.5 w-3.5 text-teal-600" />
-              Quick Demo Login Presets
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin@smartwaste.gov')}
-                className="p-2 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:border-emerald-300 border border-slate-200 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 group-hover:text-emerald-700">
-                  <Shield className="h-3 w-3 text-emerald-600" /> Admin
-                </div>
-                <div className="text-[9px] text-slate-400 truncate">System Controller</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('driver1@smartwaste.gov')}
-                className="p-2 rounded-lg bg-slate-100 hover:bg-teal-50 hover:border-teal-300 border border-slate-200 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 group-hover:text-teal-700">
-                  <Truck className="h-3 w-3 text-teal-600" /> Driver
-                </div>
-                <div className="text-[9px] text-slate-400 truncate">Rajesh Kumar</div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('citizen1@gmail.com')}
-                className="p-2 rounded-lg bg-slate-100 hover:bg-cyan-50 hover:border-cyan-300 border border-slate-200 text-left transition-all group"
-              >
-                <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700 group-hover:text-cyan-700">
-                  <User className="h-3 w-3 text-cyan-600" /> Citizen
-                </div>
-                <div className="text-[9px] text-slate-400 truncate">Priya Sharma</div>
-              </button>
-            </div>
-          </div>
 
           <div className="text-center pt-2 space-y-1.5 border-t border-slate-100">
             <p className="text-xs text-slate-500">
