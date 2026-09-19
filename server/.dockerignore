@@ -1,0 +1,12 @@
+node_modules
+npm-debug.log
+.env
+.env.local
+smart_waste.db
+smart_waste.db-shm
+smart_waste.db-wal
+uploads/*
+!uploads/.gitkeep
+test
+.git
+.gitignore

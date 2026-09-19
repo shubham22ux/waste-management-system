@@ -1,0 +1,144 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SmartWaste Infrastructure: Amazon S3 Media & Web Hosting Buckets, CloudFront CDN, and IAM Service Policy'
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: smartwaste
+    Description: Base name for all resources in this deployment
+
+  Environment:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: Deployment environment stage
+
+Resources:
+  # ============================================================================
+  # 1. Amazon S3 Bucket: Complaint Photos & Fleet Evidence
+  # ============================================================================
+  MediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-media-${Environment}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3000
+
+  MediaBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MediaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub 'arn:aws:s3:::${MediaBucket}/*'
+
+  # ============================================================================
+  # 2. Amazon S3 Bucket: Frontend Static Assets (Vite + React 19 SPA)
+  # ============================================================================
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-frontend-${Environment}-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+
+  # ============================================================================
+  # 3. Amazon CloudFront CDN Distribution for Frontend SPA
+  # ============================================================================
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub '${ProjectName} Frontend CloudFront CDN (${Environment})'
+        DefaultRootObject: index.html
+        Origins:
+          - Id: FrontendS3Origin
+            DomainName: !Select [2, !Split ['/', !GetAtt FrontendBucket.WebsiteURL]]
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: FrontendS3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS]
+          CachedMethods: [GET, HEAD]
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  # ============================================================================
+  # 4. IAM User & Policy for Backend Application (Least Privilege)
+  # ============================================================================
+  BackendIAMUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: !Sub '${ProjectName}-backend-${Environment}'
+
+  BackendIAMPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-backend-policy-${Environment}'
+      Users:
+        - !Ref BackendIAMUser
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          # S3 Upload/Read/Delete Permissions for Media Bucket
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+              - 's3:DeleteObject'
+              - 's3:PutObjectAcl'
+            Resource: !Sub 'arn:aws:s3:::${MediaBucket}/*'
+          - Effect: Allow
+            Action:
+              - 's3:ListBucket'
+            Resource: !Sub 'arn:aws:s3:::${MediaBucket}'
+          # Amazon Rekognition Permissions for AI Waste Label Detection
+          - Effect: Allow
+            Action:
+              - 'rekognition:DetectLabels'
+            Resource: '*'
+
+Outputs:
+  MediaBucketName:
+    Description: Name of S3 Media Bucket to put in server .env (AWS_S3_BUCKET)
+    Value: !Ref MediaBucket
+
+  FrontendBucketName:
+    Description: Name of S3 Frontend Bucket for website deployment
+    Value: !Ref FrontendBucket
+
+  CloudFrontDomainName:
+    Description: CloudFront CDN Domain URL for the website
+    Value: !GetAtt CloudFrontDistribution.DomainName
+
+  BackendIAMUserName:
+    Description: IAM User created for the Express Backend
+    Value: !Ref BackendIAMUser
