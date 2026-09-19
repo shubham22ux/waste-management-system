@@ -3,18 +3,40 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Brevo (Sendinblue) SMTP Configuration — Primary
+const BREVO_SMTP_KEY = process.env.BREVO_SMTP_KEY || '';
+const BREVO_SMTP_HOST = 'smtp-relay.brevo.com';
+const BREVO_SMTP_PORT = 587;
+const BREVO_SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER || process.env.ADMIN_NOTIFICATION_EMAIL || 'shubhamkumar040605@gmail.com';
+
+// Gmail fallback
+const GMAIL_USER = process.env.GMAIL_USER || process.env.ADMIN_NOTIFICATION_EMAIL || 'shubhamkumar040605@gmail.com';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || '';
+const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || '';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || '';
-const GMAIL_USER = process.env.GMAIL_USER || process.env.ADMIN_NOTIFICATION_EMAIL || 'shubhamkumar040605@gmail.com';
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || '';
 
 let transporter = null;
 
 function getTransporter() {
   if (transporter) return transporter;
 
-  // Option A: Gmail App Password / Standard SMTP (most reliable for direct dispatch)
+  // Option A: Brevo SMTP (most reliable for production)
+  if (BREVO_SMTP_KEY) {
+    transporter = nodemailer.createTransport({
+      host: BREVO_SMTP_HOST,
+      port: BREVO_SMTP_PORT,
+      secure: false,
+      auth: {
+        user: BREVO_SENDER_EMAIL,
+        pass: BREVO_SMTP_KEY
+      }
+    });
+    console.log('[Email] Using Brevo SMTP transport');
+    return transporter;
+  }
+
+  // Option B: Gmail App Password
   if (GMAIL_APP_PASSWORD) {
     transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -23,10 +45,11 @@ function getTransporter() {
         pass: GMAIL_APP_PASSWORD
       }
     });
+    console.log('[Email] Using Gmail App Password transport');
     return transporter;
   }
 
-  // Option B: Google OAuth2 with refresh token
+  // Option C: Google OAuth2 with refresh token
   if (GOOGLE_REFRESH_TOKEN) {
     transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -38,10 +61,11 @@ function getTransporter() {
         refreshToken: GOOGLE_REFRESH_TOKEN
       }
     });
+    console.log('[Email] Using Gmail OAuth2 transport');
     return transporter;
   }
 
-  // Option C: Generic SMTP if configured
+  // Option D: Generic SMTP
   if (process.env.SMTP_HOST) {
     transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -52,14 +76,16 @@ function getTransporter() {
         pass: process.env.SMTP_PASS
       }
     });
+    console.log('[Email] Using generic SMTP transport');
     return transporter;
   }
 
+  console.warn('[Email] No email transport configured. OTPs will be logged to console only.');
   return null;
 }
 
 /**
- * Sends an OTP email to the recipient or logs to console if SMTP is not fully authorized yet.
+ * Sends an OTP email to the recipient.
  * @param {Object} params
  * @param {string} params.to - Target recipient email
  * @param {string} params.otp - 6-digit OTP code
@@ -71,7 +97,7 @@ export async function sendOtpEmail({ to, otp, role, userName = 'User' }) {
   const roleTitle = role.toUpperCase();
   const expiresMinutes = 10;
 
-  // Always log prominently to server terminal for immediate developer/operator visibility
+  // Always log to server terminal for developer visibility
   console.log('\n======================================================================');
   console.log(`📨 [SMARTWASTE OTP DISPATCH]`);
   console.log(`   To       : ${to}`);
@@ -80,8 +106,10 @@ export async function sendOtpEmail({ to, otp, role, userName = 'User' }) {
   console.log(`   Validity : ${expiresMinutes} minutes`);
   console.log('======================================================================\n');
 
+  const senderEmail = BREVO_SMTP_KEY ? BREVO_SENDER_EMAIL : GMAIL_USER;
+
   const mailOptions = {
-    from: `"SmartWaste Security" <${GMAIL_USER}>`,
+    from: `"SmartWaste Security" <${senderEmail}>`,
     to,
     subject: `[SmartWaste] Your Login Verification Code: ${otp}`,
     text: `Hello ${userName},\n\nYour SmartWaste one-time verification code for ${roleTitle} login is: ${otp}\n\nThis code will expire in ${expiresMinutes} minutes.\n\nIf you did not request this login code, please ignore this email.\n\nRegards,\nSmartWaste Municipal System`,
@@ -130,11 +158,11 @@ export async function sendOtpEmail({ to, otp, role, userName = 'User' }) {
       console.log(`✅ [OTP] Email successfully delivered to ${to}`);
       return { success: true, delivered: true };
     } else {
-      console.log(`ℹ️ [OTP] SMTP credentials pending. OTP logged to server terminal for instant testing.`);
+      console.log(`ℹ️ [OTP] No email transport configured. OTP logged to server terminal.`);
       return {
         success: true,
         delivered: false,
-        note: 'SMTP transport not fully configured with app password/refresh token. Code logged to terminal.'
+        note: 'Email transport not configured. Code logged to terminal.'
       };
     }
   } catch (err) {
@@ -142,7 +170,7 @@ export async function sendOtpEmail({ to, otp, role, userName = 'User' }) {
     return {
       success: true,
       delivered: false,
-      note: `Email dispatch attempted (${err.message}). Code is available in server terminal.`
+      note: `Email dispatch failed (${err.message}). Code is available in server terminal.`
     };
   }
 }
