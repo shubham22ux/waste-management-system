@@ -140,97 +140,16 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    // ─── CITIZEN: Direct login (no OTP) ───
-    if (user.role === 'citizen') {
-      const userPayload = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        phone: user.phone
-      };
-      const token = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '7d' });
-      return res.json({ token, user: userPayload });
-    }
-
-    // ─── ADMIN: OTP only to admin email ───
-    if (user.role === 'admin') {
-      // Admin can ONLY be the designated email
-      if (user.email.toLowerCase() !== ADMIN_EMAIL && normalizedEmail !== ADMIN_EMAIL && normalizedEmail !== 'admin@smartwaste.gov') {
-        return res.status(403).json({ error: 'Admin login is restricted to the designated municipal administrator email.' });
-      }
-
-      const targetEmail = ADMIN_EMAIL;
-
-      // Expire old OTPs
-      db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
-
-      // Generate OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      db.prepare(`
-        INSERT INTO otps (email, target_email, otp, role, expires_at)
-        VALUES (?, ?, ?, 'admin', datetime('now', '+10 minutes'))
-      `).run(user.email, targetEmail, otp);
-
-      // Send OTP email
-      await sendOtpEmail({ to: targetEmail, otp, role: 'admin', userName: user.name });
-
-      // Generate temp token
-      const tempToken = generateTempToken(user.email, 'admin');
-
-      return res.json({
-        requireOtp: true,
-        tempToken,
-        email: user.email,
-        maskedEmail: maskEmail(targetEmail),
-        role: 'admin',
-        message: `A 6-digit verification code has been sent to ${maskEmail(targetEmail)}.`
-      });
-    }
-
-    // ─── DRIVER: Check approval, then OTP to driver email ───
-    if (user.role === 'driver') {
-      // Check if driver email is approved by admin
-      const approved = db.prepare(
-        'SELECT * FROM approved_driver_emails WHERE email = ? AND is_active = 1'
-      ).get(user.email.toLowerCase());
-
-      if (!approved) {
-        return res.status(403).json({
-          error: 'Your email has not been approved by the administrator. Please contact your Municipal Admin to approve your email for login.'
-        });
-      }
-
-      const targetEmail = user.email;
-
-      // Expire old OTPs
-      db.prepare('UPDATE otps SET used = 1 WHERE email = ? AND used = 0').run(user.email);
-
-      // Generate OTP
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      db.prepare(`
-        INSERT INTO otps (email, target_email, otp, role, expires_at)
-        VALUES (?, ?, ?, 'driver', datetime('now', '+10 minutes'))
-      `).run(user.email, targetEmail, otp);
-
-      // Send OTP email
-      await sendOtpEmail({ to: targetEmail, otp, role: 'driver', userName: user.name });
-
-      // Generate temp token
-      const tempToken = generateTempToken(user.email, 'driver');
-
-      return res.json({
-        requireOtp: true,
-        tempToken,
-        email: user.email,
-        maskedEmail: maskEmail(targetEmail),
-        role: 'driver',
-        message: `A 6-digit verification code has been sent to ${maskEmail(targetEmail)}.`
-      });
-    }
-
-    // Fallback (should not reach here)
-    return res.status(403).json({ error: 'Unknown role. Access denied.' });
+    // Direct password login for all roles (Admin, Driver, Citizen) - No OTP required
+    const userPayload = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone
+    };
+    const token = jwt.sign(userPayload, JWT_SECRET, { expiresIn: '7d' });
+    return res.json({ token, user: userPayload });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: err.message });

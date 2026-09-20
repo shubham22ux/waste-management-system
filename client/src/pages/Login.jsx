@@ -211,19 +211,19 @@ export default function Login() {
                 <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                   <Shield className="h-4 w-4 text-emerald-600 shrink-0" />
                   <span className="text-[11px] text-slate-500">
-                    <strong className="text-slate-700">Admin:</strong> OTP sent to designated admin inbox
+                    <strong className="text-slate-700">Admin:</strong> Secure direct login with password
                   </span>
                 </div>
                 <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                   <Truck className="h-4 w-4 text-teal-600 shrink-0" />
                   <span className="text-[11px] text-slate-500">
-                    <strong className="text-slate-700">Driver:</strong> Must be approved by admin, OTP sent to driver email
+                    <strong className="text-slate-700">Driver:</strong> Direct login with driver credentials
                   </span>
                 </div>
                 <div className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                   <Users className="h-4 w-4 text-blue-600 shrink-0" />
                   <span className="text-[11px] text-slate-500">
-                    <strong className="text-slate-700">Citizen:</strong> Direct login with password (no OTP)
+                    <strong className="text-slate-700">Citizen:</strong> Direct login with password
                   </span>
                 </div>
               </div>
