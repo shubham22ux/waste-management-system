@@ -31,7 +31,6 @@ services:
       - JWT_SECRET=${JWT_SECRET:-smartwaste_super_secret_jwt_key_2026}
     volumes:
       - server_uploads:/app/uploads
-      - server_db:/app
     depends_on:
       mongo:
         condition: service_healthy
