@@ -56,11 +56,11 @@ To solve this, **SmartWaste** establishes a **Three-Pillar AI Architecture**:
 ## 📦 Section 1: Environment Setup & Library Imports
 Installing required scientific computing, deep learning, and spatial optimization libraries.""")
 
-    code("""# Check runtime GPU availability
+    code(r"""# Check runtime GPU availability
 import subprocess
 try:
     gpu_info = subprocess.check_output(['nvidia-smi']).decode('utf-8')
-    print("🚀 GPU Detected:\n", gpu_info[:250], "...")
+    print("🚀 GPU Detected:", gpu_info.split('\n')[0])
 except Exception:
     print("ℹ️ Running in CPU Mode (Fully supported for all models in this notebook).")
 
