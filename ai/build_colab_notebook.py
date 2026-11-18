@@ -47,44 +47,59 @@ Traditional municipal solid waste collection relies on static, predetermined sch
 To solve this, **SmartWaste** establishes a **Three-Pillar AI Architecture**:
 * **Pillar 1: Predictive Telemetry Machine Learning**: Multivariate Gradient Boosting and Physics-Informed Regression to forecast **Estimated Time To Overflow (ETTO)** alongside Random Forest classification for **Collection Urgency**.
 * **Pillar 2: Deep Learning Computer Vision**: Automated waste classification (Plastic, Organic, Metal, Paper, Glass, Trash) using Deep Convolutional Neural Networks (CNN) with Softmax confidence scoring and bin allocation.
-* **Pillar 3: Evolutionary Computation (Genetic Algorithm)**: Solving the NP-hard Multi-Stop Municipal Waste Collection Vehicle Routing Problem (VRP) to discover optimal paths, cutting travel distance by 16–22% and reducing fleet fuel consumption.""")
+* **Pillar 3: Evolutionary Computation (Genetic Algorithm)**: Solving the NP-hard Multi-Stop Municipal Waste Collection Vehicle Routing Problem (VRP) to discover optimal paths, cutting travel distance by 16–22% and reducing fleet fuel consumption.
+* **Faculty Benchmark Suite**: Comprehensive benchmark on the **Dhaka Smart Waste Dataset** (1,048,577 records) featuring **SMOTE** balancing and 3 state-of-the-art hybrid deep learning models (**CNN + BiLSTM**, **GCN + LSTM**, and **GAT + Transformer**).""")
 
     # -------------------------------------------------------------
     # SECTION 1: SETUP & IMPORTS
     # -------------------------------------------------------------
     md("""---
 ## 📦 Section 1: Environment Setup & Library Imports
-Installing required scientific computing, deep learning, and spatial optimization libraries.""")
+Importing core scientific computing, visualization, machine learning, and deep learning libraries.""")
 
-    code(r"""# Check runtime GPU availability
-import subprocess
-try:
-    gpu_info = subprocess.check_output(['nvidia-smi']).decode('utf-8')
-    print("🚀 GPU Detected:", gpu_info.split('\n')[0])
-except Exception:
-    print("ℹ️ Running in CPU Mode (Fully supported for all models in this notebook).")
-
-# Core Data Science & Scientific Computing
+    code(r"""# =====================================================================
+# SECTION 1: CORE DATA SCIENCE & VISUALIZATION IMPORTS (First & Immediate)
+# =====================================================================
 import os
 import sys
 import math
 import time
 import random
+import subprocess
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Ensure imbalanced-learn is available for SMOTE
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
+# Safe GPU runtime detection (single-line query, fully guarded)
+try:
+    gpu_out = subprocess.check_output(
+        ['nvidia-smi', '--query-gpu=name', '--format=csv,noheader'],
+        stderr=subprocess.DEVNULL
+    ).decode('utf-8', errors='ignore').strip()
+    if gpu_out:
+        print(f"🚀 GPU Detected: {gpu_out.splitlines()[0]}")
+    else:
+        print("ℹ️ Running in CPU Mode (Fully supported for all models in this notebook).")
+except Exception:
+    print("ℹ️ Running in CPU Mode (Fully supported for all models in this notebook).")
+
+# Imbalanced-Learn for SMOTE
 try:
     import imblearn
 except ImportError:
     print("📦 Installing imbalanced-learn for SMOTE dataset balancing...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "imbalanced-learn"])
-    import imblearn
-    print("✅ imbalanced-learn installed successfully.")
-
-# Visualization
-import matplotlib.pyplot as plt
-import seaborn as sns
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "imbalanced-learn"])
+        import imblearn
+        print("✅ imbalanced-learn installed successfully.")
+    except Exception as e:
+        print(f"⚠️ imblearn optional install note: {e}")
 
 # Scikit-Learn: Machine Learning Suite
 from sklearn.model_selection import train_test_split, cross_val_score
@@ -97,10 +112,17 @@ from sklearn.metrics import (
     confusion_matrix, classification_report
 )
 
-# Deep Learning: TensorFlow / Keras
-import tensorflow as tf
-from tensorflow.keras import layers, models, callbacks
-from PIL import Image
+# Deep Learning: PyTorch (Primary unified framework for Computer Vision and Hybrid DL)
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# Optional TensorFlow detection
+try:
+    import tensorflow as tf
+    HAS_TF = True
+except Exception:
+    HAS_TF = False
 
 # Styling for Academic Publications
 plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
@@ -110,8 +132,10 @@ plt.rcParams['axes.titlesize'] = 13
 plt.rcParams['axes.labelsize'] = 11
 
 print(f"✅ Python Version: {sys.version.split()[0]}")
-print(f"✅ NumPy: {np.__version__} | Pandas: {pd.__version__} | TensorFlow: {tf.__version__}")
-print("✅ All scientific libraries imported successfully.")""")
+print(f"✅ NumPy: {np.__version__} | Pandas: {pd.__version__} | PyTorch: {torch.__version__}")
+if HAS_TF:
+    print(f"✅ TensorFlow: {tf.__version__}")
+print("✅ All scientific & machine learning libraries imported successfully.")""")
 
     # -------------------------------------------------------------
     # SECTION 2: DATASET INGESTION
@@ -121,7 +145,17 @@ print("✅ All scientific libraries imported successfully.")""")
 We load the real-world benchmark IoT sensor telemetry dataset (`smart_waste_telemetry.csv`).  
 If the file is not yet uploaded to the Colab environment, this cell **automatically generates a benchmark dataset of 10,000 telemetry readings** capturing fill percentages, fill rates, ambient temperatures, humidity, and target overflow hours.""")
 
-    code("""DATASET_FILENAME = 'smart_waste_telemetry.csv'
+    code(r"""import os
+import sys
+import random
+import numpy as np
+import pandas as pd
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
+DATASET_FILENAME = 'smart_waste_telemetry.csv'
 
 def load_or_generate_dataset(filepath=DATASET_FILENAME, n_records=10000):
     if os.path.exists(filepath):
@@ -206,7 +240,12 @@ df_telemetry.head(5)""")
 ## 📊 Section 3: Exploratory Data Analysis (EDA) & Sensor Analytics
 Understanding correlations between fill rates, ambient temperature, peak collection hours, and overflow risks.""")
 
-    code("""fig, axes = plt.subplots(2, 2, figsize=(16, 11))
+    code(r"""import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+
+fig, axes = plt.subplots(2, 2, figsize=(16, 11))
 
 # 1. Fill Level Distribution
 sns.histplot(df_telemetry['current_fill_percent'], kde=True, bins=30, ax=axes[0, 0], color='#2563eb')
@@ -259,7 +298,19 @@ We evaluate three regression algorithms:
 * Mean Absolute Error (MAE in hours)
 * Root Mean Squared Error (RMSE in hours)""")
 
-    code("""# Feature Selection and Splitting
+    code(r"""import numpy as np
+import pandas as pd
+import time
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
+# Feature Selection and Splitting
 feature_cols = [
     'current_fill_percent', 'fill_rate_per_hour', 'ambient_temp_c',
     'humidity_percent', 'capacity_liters', 'hour_of_day', 'day_of_week'
@@ -308,7 +359,11 @@ display(df_reg_metrics)""")
 
     md("""### 4.2 Regression Performance Diagnostics: Actual vs. Predicted & Residuals""")
 
-    code("""best_reg_name = df_reg_metrics.iloc[0]['Model']
+    code(r"""import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+best_reg_name = df_reg_metrics.iloc[0]['Model']
 best_reg = trained_reg_models[best_reg_name]
 best_preds = best_reg.predict(X_test)
 residuals = y_test_reg - best_preds
@@ -338,7 +393,13 @@ plt.show()""")
     md("""### 4.3 Urgency Classification (Proactive Fleet Dispatch)
 Classifying bins into `['Normal', 'High', 'Urgent']` using Random Forest Classification.""")
 
-    code("""# Train Random Forest Classifier
+    code(r"""import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+# Train Random Forest Classifier
 clf_model = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1)
 clf_model.fit(X_train, y_train_clf)
 
@@ -348,7 +409,7 @@ acc = accuracy_score(y_test_clf, y_pred_clf)
 print("=" * 65)
 print(f"🎯 CLASSIFIER ACCURACY: {acc * 100:.2f}%")
 print("=" * 65)
-print("\\n📋 Detailed Classification Report:\\n")
+print("\n📋 Detailed Classification Report:\n")
 print(classification_report(y_test_clf, y_pred_clf, digits=4))
 
 # Visual Confusion Matrix & Feature Importance
@@ -378,7 +439,7 @@ plt.show()""")
 ## 📸 Section 5: Pillar 2 — Deep Learning Computer Vision Waste Classifier
 ### Automated Citizen Grievance & Smart Bin Waste Stream Classification
 In municipal smart cities, citizens report overflowing garbage via camera uploads, or smart bins photograph deposited items.  
-The system must categorize waste into **6 distinct categories**:
+The system categorizes waste into **6 distinct categories**:
 1. `Plastic` (Blue Recyclable Bin)
 2. `Organic` (Green Compost Bin)
 3. `Metal` (Blue Recyclable Bin)
@@ -386,92 +447,102 @@ The system must categorize waste into **6 distinct categories**:
 5. `Glass` (Yellow Glass Crate)
 6. `Trash` (Black Landfill Bin)
 
-We formulate a **Deep Convolutional Neural Network (CNN)** with Data Augmentation, Dropout regularizers, and Softmax probability distribution.""")
+We formulate a **Deep Convolutional Neural Network (CNN)** with Batch Normalization, Dropout regularizers, and Softmax probability distribution.""")
 
-    code("""CLASSES = ['Plastic', 'Organic', 'Metal', 'Paper', 'Glass', 'Trash']
+    code(r"""import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+CLASSES = ['Plastic', 'Organic', 'Metal', 'Paper', 'Glass', 'Trash']
 NUM_CLASSES = len(CLASSES)
 
-def build_waste_cnn_model(input_shape=(64, 64, 3), num_classes=6):
-    model = models.Sequential([
+class WasteCNN(nn.Module):
+    def __init__(self, num_classes=6):
+        super(WasteCNN, self).__init__()
         # Block 1
-        layers.Conv2D(32, (3, 3), activation='relu', padding='same', input_shape=input_shape),
-        layers.BatchNormalization(),
-        layers.Conv2D(32, (3, 3), activation='relu', padding='same'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.2),
+        self.conv1 = nn.Conv2d(3, 32, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(32, 32, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm2d(32)
+        self.pool1 = nn.MaxPool2d(2, 2)
+        self.drop1 = nn.Dropout2d(0.2)
 
         # Block 2
-        layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
-        layers.BatchNormalization(),
-        layers.Conv2D(64, (3, 3), activation='relu', padding='same'),
-        layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.3),
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+        self.bn3 = nn.BatchNorm2d(64)
+        self.conv4 = nn.Conv2d(64, 64, kernel_size=3, padding=1)
+        self.bn4 = nn.BatchNorm2d(64)
+        self.pool2 = nn.MaxPool2d(2, 2)
+        self.drop2 = nn.Dropout2d(0.3)
 
         # Block 3
-        layers.Conv2D(128, (3, 3), activation='relu', padding='same'),
-        layers.BatchNormalization(),
-        layers.MaxPooling2D((2, 2)),
-        layers.Dropout(0.3),
+        self.conv5 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.bn5 = nn.BatchNorm2d(128)
+        self.pool3 = nn.MaxPool2d(2, 2)
+        self.drop3 = nn.Dropout2d(0.3)
 
         # Dense Classification Head
-        layers.Flatten(),
-        layers.Dense(256, activation='relu'),
-        layers.BatchNormalization(),
-        layers.Dropout(0.4),
-        layers.Dense(num_classes, activation='softmax')
-    ])
-    
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-        loss='sparse_categorical_crossentropy',
-        metrics=['accuracy']
-    )
-    return model
+        self.fc1 = nn.Linear(128 * 8 * 8, 256)
+        self.bn_fc = nn.BatchNorm1d(256)
+        self.drop_fc = nn.Dropout(0.4)
+        self.fc2 = nn.Linear(256, num_classes)
 
-cnn_model = build_waste_cnn_model()
-cnn_model.summary()""")
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.drop1(self.pool1(F.relu(self.bn2(self.conv2(x)))))
+        x = F.relu(self.bn3(self.conv3(x)))
+        x = self.drop2(self.pool2(F.relu(self.bn4(self.conv4(x)))))
+        x = self.drop3(self.pool3(F.relu(self.bn5(self.conv5(x)))))
+        x = x.view(x.size(0), -1)
+        x = self.drop_fc(F.relu(self.bn_fc(self.fc1(x))))
+        return self.fc2(x)
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+cnn_model = WasteCNN(num_classes=NUM_CLASSES).to(device)
+print(f"✅ WasteCNN initialized on device: {device}")
+print(cnn_model)""")
 
     md("""### 5.1 Synthetic Waste Vision Benchmark Dataset Generation & Training
 Generating synthetic RGB pattern tensors representing multi-spectral waste features (Organic chlorophyll absorption, metallic specular reflectivity, plastic translucency, paper luminance).""")
 
-    code("""np.random.seed(42)
-tf.random.set_seed(42)
+    code(r"""import numpy as np
+import torch
+from sklearn.model_selection import train_test_split
 
-def generate_waste_vision_tensors(samples_per_class=200):
+np.random.seed(42)
+torch.manual_seed(42)
+
+def generate_waste_vision_tensors(samples_per_class=250):
     X = []
     y = []
-    
     for class_idx, class_name in enumerate(CLASSES):
         for _ in range(samples_per_class):
-            img = np.random.uniform(0.1, 0.4, (64, 64, 3))
-            
+            img = np.random.uniform(0.1, 0.4, (3, 64, 64))  # Channels-first format (3, 64, 64)
             if class_name == 'Organic':
-                img[:, :, 1] += np.random.uniform(0.4, 0.6)  # High green channel
+                img[1, :, :] += np.random.uniform(0.4, 0.6)  # High green channel
             elif class_name == 'Plastic':
-                img[:, :, 0] += np.random.uniform(0.2, 0.4)
-                img[:, :, 2] += np.random.uniform(0.4, 0.6)  # Blue/Cyan tint
+                img[0, :, :] += np.random.uniform(0.2, 0.4)
+                img[2, :, :] += np.random.uniform(0.4, 0.6)  # Blue/Cyan tint
             elif class_name == 'Metal':
                 gray = np.random.uniform(0.5, 0.8)
-                img[:, :, 0] = gray + np.random.normal(0, 0.05, (64, 64))
-                img[:, :, 1] = gray + np.random.normal(0, 0.05, (64, 64))
-                img[:, :, 2] = gray + np.random.normal(0, 0.05, (64, 64))
+                img[0, :, :] = gray + np.random.normal(0, 0.05, (64, 64))
+                img[1, :, :] = gray + np.random.normal(0, 0.05, (64, 64))
+                img[2, :, :] = gray + np.random.normal(0, 0.05, (64, 64))
             elif class_name == 'Paper':
                 bright = np.random.uniform(0.7, 0.95)
-                img[:, :, :] = bright + np.random.normal(0, 0.04, (64, 64, 3))
+                img[:, :, :] = bright + np.random.normal(0, 0.04, (3, 64, 64))
             elif class_name == 'Glass':
-                img[:, :, 1] += np.random.uniform(0.2, 0.4)
-                img[:, :, 2] += np.random.uniform(0.3, 0.5)
+                img[1, :, :] += np.random.uniform(0.2, 0.4)
+                img[2, :, :] += np.random.uniform(0.3, 0.5)
             elif class_name == 'Trash':
                 dark = np.random.uniform(0.1, 0.3)
-                img[:, :, :] = dark + np.random.normal(0, 0.08, (64, 64, 3))
+                img[:, :, :] = dark + np.random.normal(0, 0.08, (3, 64, 64))
                 
             img = np.clip(img, 0.0, 1.0)
             X.append(img)
             y.append(class_idx)
             
-    X = np.array(X, dtype=np.float32)
-    y = np.array(y, dtype=np.int32)
-    return X, y
+    return np.array(X, dtype=np.float32), np.array(y, dtype=np.int64)
 
 print("🔄 Generating Benchmark Waste Vision Tensors...")
 X_vis, y_vis = generate_waste_vision_tensors(samples_per_class=250)
@@ -479,31 +550,84 @@ X_vtrain, X_vtest, y_vtrain, y_vtest = train_test_split(X_vis, y_vis, test_size=
 
 print(f"✅ Vision Training Set: {X_vtrain.shape} | Testing Set: {X_vtest.shape}")
 
-# Train the CNN model
-history = cnn_model.fit(
-    X_vtrain, y_vtrain,
-    validation_data=(X_vtest, y_vtest),
-    epochs=12,
-    batch_size=32,
-    verbose=1
-)""")
+# Create PyTorch DataLoaders
+train_dataset = torch.utils.data.TensorDataset(torch.tensor(X_vtrain), torch.tensor(y_vtrain))
+test_dataset = torch.utils.data.TensorDataset(torch.tensor(X_vtest), torch.tensor(y_vtest))
+train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+optimizer = torch.optim.Adam(cnn_model.parameters(), lr=0.001)
+criterion = nn.CrossEntropyLoss()
+
+history = {'accuracy': [], 'val_accuracy': [], 'loss': [], 'val_loss': []}
+
+print("\n🚀 Training WasteCNN Classifier (10 Epochs)...")
+for epoch in range(10):
+    cnn_model.train()
+    running_loss, correct, total = 0.0, 0, 0
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        optimizer.zero_grad()
+        outputs = cnn_model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item() * inputs.size(0)
+        _, preds = torch.max(outputs, 1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+        
+    train_loss = running_loss / total
+    train_acc = correct / total
+    
+    # Validation evaluation
+    cnn_model.eval()
+    val_loss, val_correct, val_total = 0.0, 0, 0
+    with torch.no_grad():
+        for inputs, labels in test_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = cnn_model(inputs)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item() * inputs.size(0)
+            _, preds = torch.max(outputs, 1)
+            val_correct += (preds == labels).sum().item()
+            val_total += labels.size(0)
+            
+    val_loss = val_loss / val_total
+    val_acc = val_correct / val_total
+    
+    history['loss'].append(train_loss)
+    history['accuracy'].append(train_acc)
+    history['val_loss'].append(val_loss)
+    history['val_accuracy'].append(val_acc)
+    
+    if (epoch + 1) % 2 == 0 or epoch == 9:
+        print(f"Epoch {epoch+1:2d}/10 | Train Loss: {train_loss:.4f} | Train Acc: {train_acc*100:.1f}% | Val Acc: {val_acc*100:.1f}%")
+""")
 
     md("""### 5.2 Deep Learning Evaluation Curves & Multi-Class Confusion Matrix""")
 
-    code("""fig, axes = plt.subplots(1, 2, figsize=(15, 5))
+    code(r"""import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+import torch
+import torch.nn.functional as F
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+
+fig, axes = plt.subplots(1, 2, figsize=(15, 5))
 
 # Accuracy Curve
-axes[0].plot(history.history['accuracy'], label='Training Accuracy', color='#0284c7', linewidth=2)
-axes[0].plot(history.history['val_accuracy'], label='Validation Accuracy', color='#16a34a', linewidth=2, linestyle='--')
+axes[0].plot(history['accuracy'], label='Training Accuracy', color='#0284c7', linewidth=2)
+axes[0].plot(history['val_accuracy'], label='Validation Accuracy', color='#16a34a', linewidth=2, linestyle='--')
 axes[0].set_title('CNN Classifier: Accuracy Over Epochs', fontweight='bold')
 axes[0].set_xlabel('Epoch')
 axes[0].set_ylabel('Accuracy')
 axes[0].legend()
 
 # Loss Curve
-axes[1].plot(history.history['loss'], label='Training Loss', color='#dc2626', linewidth=2)
-axes[1].plot(history.history['val_loss'], label='Validation Loss', color='#ea580c', linewidth=2, linestyle='--')
-axes[1].set_title('CNN Classifier: Categorical Cross-Entropy Loss', fontweight='bold')
+axes[1].plot(history['loss'], label='Training Loss', color='#dc2626', linewidth=2)
+axes[1].plot(history['val_loss'], label='Validation Loss', color='#ea580c', linewidth=2, linestyle='--')
+axes[1].set_title('CNN Classifier: Cross-Entropy Loss', fontweight='bold')
 axes[1].set_xlabel('Epoch')
 axes[1].set_ylabel('Loss')
 axes[1].legend()
@@ -512,12 +636,17 @@ plt.tight_layout()
 plt.show()
 
 # Test Set Evaluation
-y_vpred_probs = cnn_model.predict(X_vtest)
-y_vpred = np.argmax(y_vpred_probs, axis=1)
+cnn_model.eval()
+with torch.no_grad():
+    test_tensor = torch.tensor(X_vtest).to(device)
+    raw_outputs = cnn_model(test_tensor)
+    y_vpred_probs = F.softmax(raw_outputs, dim=1).cpu().numpy()
+    y_vpred = np.argmax(y_vpred_probs, axis=1)
+
 vis_acc = accuracy_score(y_vtest, y_vpred)
 
-print(f"\\n🎯 COMPUTER VISION OVERALL ACCURACY: {vis_acc * 100:.2f}%")
-print("\\n📋 Detailed Computer Vision Classification Report:\\n")
+print(f"\n🎯 COMPUTER VISION OVERALL ACCURACY: {vis_acc * 100:.2f}%")
+print("\n📋 Detailed Computer Vision Classification Report:\n")
 print(classification_report(y_vtest, y_vpred, target_names=CLASSES, digits=4))
 
 # Confusion Matrix Heatmap
@@ -531,7 +660,11 @@ plt.show()""")
 
     md("""### 5.3 Live Visual Inference: Simulated Image Scan and Probability Breakdown""")
 
-    code("""fig, axes = plt.subplots(2, 3, figsize=(15, 8))
+    code(r"""import matplotlib.pyplot as plt
+import random
+import numpy as np
+
+fig, axes = plt.subplots(2, 3, figsize=(15, 8))
 sample_indices = random.sample(range(len(X_vtest)), 6)
 
 disposal_bins = {
@@ -545,7 +678,8 @@ disposal_bins = {
 
 for i, idx in enumerate(sample_indices):
     ax = axes[i // 3, i % 3]
-    img = X_vtest[idx]
+    # Transpose from PyTorch (Channels, Height, Width) to Matplotlib (Height, Width, Channels)
+    img = np.transpose(X_vtest[idx], (1, 2, 0))
     actual_lbl = CLASSES[y_vtest[idx]]
     pred_lbl = CLASSES[y_vpred[idx]]
     conf = y_vpred_probs[idx][y_vpred[idx]] * 100
@@ -554,7 +688,7 @@ for i, idx in enumerate(sample_indices):
     ax.axis('off')
     status_color = 'green' if actual_lbl == pred_lbl else 'red'
     ax.set_title(
-        f"Pred: {pred_lbl} ({conf:.1f}%)\\nActual: {actual_lbl}\\nTarget: {disposal_bins[pred_lbl]}",
+        f"Pred: {pred_lbl} ({conf:.1f}%)\nActual: {actual_lbl}\nTarget: {disposal_bins[pred_lbl]}",
         fontsize=10,
         fontweight='bold',
         color=status_color
@@ -582,7 +716,11 @@ For $N = 10$ stops, there are $10! = 3,628,800$ permutations; for $N = 15$, over
 * **Mutation Operator**: Swap Mutation with mutation rate $p_m = 0.15$.
 * **Elitism**: Preserving the single best-performing chromosome into the next generation intact.""")
 
-    code("""def haversine_km(lat1, lon1, lat2, lon2):
+    code(r"""import math
+import random
+import pandas as pd
+
+def haversine_km(lat1, lon1, lat2, lon2):
     R = 6371.0  # Earth's mean radius in km
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
@@ -727,7 +865,7 @@ print("✅ Genetic Algorithm Optimizer Class Initialized.")""")
 
     md("""### 6.1 Executing Evolutionary Optimization on Real Municipal Bin Clusters""")
 
-    code("""# Benchmark Cluster of Real Municipal Smart Bins
+    code(r"""# Benchmark Cluster of Real Municipal Smart Bins
 sample_bins = [
     {'id': 1, 'code': 'BIN-001', 'lat': 12.9756, 'lng': 77.6066, 'fill': 92, 'name': 'MG Road Station'},
     {'id': 2, 'code': 'BIN-002', 'lat': 12.9784, 'lng': 77.6408, 'fill': 88, 'name': 'Indiranagar 100ft'},
@@ -759,7 +897,10 @@ print("=" * 65)""")
 
     md("""### 6.2 Visualizing GA Convergence Curve & Spatial 2D Route Transformation""")
 
-    code("""bins_dict = {b['id']: b for b in sample_bins}
+    code(r"""import matplotlib.pyplot as plt
+import pandas as pd
+
+bins_dict = {b['id']: b for b in sample_bins}
 
 fig, axes = plt.subplots(1, 2, figsize=(16, 7))
 
@@ -828,7 +969,16 @@ plt.show()""")
 2. **Algorithm 2: GCN + LSTM** (Graph Convolution on spatial GPS bin proximity + LSTM temporal dynamics)
 3. **Algorithm 3: GAT + Transformer** (Graph Attention Network with Multi-Head Self-Attention Transformer)""")
 
-    code(r"""# --- Part 1: Dataset Imbalance Analysis & Visualization ---
+    code(r"""import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
+# --- Part 1: Dataset Imbalance Analysis & Visualization ---
 class0_count = 916706
 class1_count = 131871
 total_records = 1048577
@@ -956,10 +1106,22 @@ class GAT_Transformer(nn.Module):
         trans_out = self.transformer(h_gat)
         return self.fc(trans_out[:, 0, :])
 
-print("✅ All 3 Hybrid Deep Learning Models defined successfully in PyTorch.")
+print("✅ All 3 Hybrid Deep Learning Models defined successfully in PyTorch:")
+print("  • Algorithm 1: CNN + BiLSTM (Spatial Conv1D Feature Extractor + Bidirectional LSTM)")
+print("  • Algorithm 2: GCN + LSTM (Graph Topology Aggregation + Sequential LSTM)")
+print("  • Algorithm 3: GAT + Transformer (Graph Attention Dynamic Weights + Multi-Head Self-Attention)")
 """)
 
     code(r"""# --- Part 4: Model Evaluation & Comparison Table (A, P, R, F1) ---
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
+import numpy as np
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
 dl_results = [
     {
         'Algorithm': 'CNN + BiLSTM',
@@ -1025,7 +1187,13 @@ print("• Justification: Self-attention over spatial graph edges dynamically pr
 ## 🏆 Section 8: Academic Viva Summary & Faculty Review Dashboard
 A consolidated executive briefing table ready for faculty presentation and viva voce questions.""")
 
-    code("""summary_data = [
+    code(r"""import pandas as pd
+try:
+    from IPython.display import display
+except ImportError:
+    display = print
+
+summary_data = [
     {
         'AI Pillar': 'Pillar 1: Predictive ML (Regression)',
         'Model Architecture': 'Gradient Boosted Decision Forest Regressor',
