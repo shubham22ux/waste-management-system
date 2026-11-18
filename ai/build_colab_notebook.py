@@ -60,7 +60,7 @@ Installing required scientific computing, deep learning, and spatial optimizatio
 import subprocess
 try:
     gpu_info = subprocess.check_output(['nvidia-smi']).decode('utf-8')
-    print("🚀 GPU Detected:\\n", gpu_info[:250], "...")
+    print("🚀 GPU Detected:\n", gpu_info[:250], "...")
 except Exception:
     print("ℹ️ Running in CPU Mode (Fully supported for all models in this notebook).")
 
@@ -72,6 +72,15 @@ import time
 import random
 import numpy as np
 import pandas as pd
+
+# Ensure imbalanced-learn is available for SMOTE
+try:
+    import imblearn
+except ImportError:
+    print("📦 Installing imbalanced-learn for SMOTE dataset balancing...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "imbalanced-learn"])
+    import imblearn
+    print("✅ imbalanced-learn installed successfully.")
 
 # Visualization
 import matplotlib.pyplot as plt
