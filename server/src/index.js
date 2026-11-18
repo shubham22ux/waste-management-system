@@ -16,6 +16,7 @@ import notificationsRouter from './routes/notifications.js';
 import fuelLogsRouter from './routes/fuelLogs.js';
 import reportsRouter from './routes/reports.js';
 import analyticsRouter from './routes/analytics.js';
+import aiRouter from './routes/ai.js';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -273,6 +274,7 @@ app.use('/api/notifications', notificationsRouter);
 app.use('/api/fuel-logs', fuelLogsRouter);
 app.use('/api/reports', reportsRouter);
 app.use('/api/analytics', analyticsRouter);
+app.use('/api/ai', aiRouter);
 
 server.listen(PORT, () => {
   console.log(`[Server] SmartWaste Express API & Socket.IO running on http://localhost:${PORT}`);

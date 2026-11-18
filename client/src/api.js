@@ -17,7 +17,7 @@ export async function apiFetch(endpoint, options = {}) {
   const token = localStorage.getItem('smartwaste_token');
 
   const headers = {
-    'Content-Type': 'application/json',
+    ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
     ...(options.headers || {})
   };
 

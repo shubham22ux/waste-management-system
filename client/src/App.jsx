@@ -18,6 +18,7 @@ import FuelAnalytics from './pages/FuelAnalytics';
 import OperationsAnalytics from './pages/OperationsAnalytics';
 import Complaints from './pages/Complaints';
 import DriverApproval from './pages/DriverApproval';
+import AiHub from './pages/AiHub';
 
 // Driver Pages
 import DriverRoutes from './pages/driver/DriverRoutes';
@@ -106,6 +107,7 @@ export default function App() {
                 <Route path="/analytics" element={<OperationsAnalytics />} />
                 <Route path="/complaints" element={<Complaints />} />
                 <Route path="/driver-approvals" element={<DriverApproval />} />
+                <Route path="/ai-hub" element={<AiHub />} />
               </Route>
 
               {/* Driver Protected Routes */}
@@ -120,6 +122,7 @@ export default function App() {
                 <Route path="/citizen/report" element={<ReportComplaint />} />
                 <Route path="/citizen/complaints" element={<MyComplaints />} />
                 <Route path="/citizen/bins" element={<NearbyBins />} />
+                <Route path="/ai-hub" element={<AiHub />} />
               </Route>
 
               {/* Fallback */}

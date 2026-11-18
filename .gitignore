@@ -6,3 +6,16 @@ build
 *.log
 .DS_Store
 
+# Large datasets (exceed GitHub 100MB limit)
+dataset1/
+dataset2/
+dataset3/
+dataset4/
+
+# Large binaries & archives
+*.zip
+*.pdf
+google_colab_package/
+ai/__pycache__/
+server/uploads/
+

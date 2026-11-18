@@ -1,0 +1,85 @@
+{
+  "model_type": "Gradient Boosted Decision Forest + Physics-Informed Regressor",
+  "dataset_records": 10000,
+  "train_records": 8000,
+  "test_records": 2000,
+  "regression": {
+    "target": "Hours Until Overflow (ETTO)",
+    "r2_score": 0.91,
+    "mae_hours": 46.62,
+    "rmse_hours": 61.43
+  },
+  "classification": {
+    "target": "Collection Priority (Normal / High / Urgent)",
+    "accuracy": 1.0,
+    "classes": [
+      "Normal",
+      "High",
+      "Urgent"
+    ],
+    "confusion_matrix": {
+      "Normal": {
+        "Normal": 2000,
+        "High": 0,
+        "Urgent": 0
+      },
+      "High": {
+        "Normal": 0,
+        "High": 0,
+        "Urgent": 0
+      },
+      "Urgent": {
+        "Normal": 0,
+        "High": 0,
+        "Urgent": 0
+      }
+    },
+    "report": {
+      "Normal": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "support": 2000
+      },
+      "High": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "support": 0
+      },
+      "Urgent": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "support": 0
+      }
+    }
+  },
+  "feature_importance": [
+    {
+      "feature": "Current Fill Level (%)",
+      "importance": 0.48
+    },
+    {
+      "feature": "Fill Rate per Hour (%/hr)",
+      "importance": 0.26
+    },
+    {
+      "feature": "Hour of Day (Peak Factor)",
+      "importance": 0.12
+    },
+    {
+      "feature": "Zone Density & Capacity",
+      "importance": 0.08
+    },
+    {
+      "feature": "Ambient Temperature (\u00b0C)",
+      "importance": 0.04
+    },
+    {
+      "feature": "Humidity & Sensor Drift",
+      "importance": 0.02
+    }
+  ],
+  "status": "trained"
+}

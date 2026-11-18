@@ -1,0 +1,752 @@
+{
+  "last_trained_at": "2026-10-22 11:12:17",
+  "ml_telemetry": {
+    "model_type": "Gradient Boosted Decision Forest + Physics-Informed Regressor",
+    "dataset_records": 10000,
+    "train_records": 8000,
+    "test_records": 2000,
+    "regression": {
+      "target": "Hours Until Overflow (ETTO)",
+      "r2_score": 0.91,
+      "mae_hours": 46.62,
+      "rmse_hours": 61.43
+    },
+    "classification": {
+      "target": "Collection Priority (Normal / High / Urgent)",
+      "accuracy": 1.0,
+      "classes": [
+        "Normal",
+        "High",
+        "Urgent"
+      ],
+      "confusion_matrix": {
+        "Normal": {
+          "Normal": 2000,
+          "High": 0,
+          "Urgent": 0
+        },
+        "High": {
+          "Normal": 0,
+          "High": 0,
+          "Urgent": 0
+        },
+        "Urgent": {
+          "Normal": 0,
+          "High": 0,
+          "Urgent": 0
+        }
+      },
+      "report": {
+        "Normal": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 2000
+        },
+        "High": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 0
+        },
+        "Urgent": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1_score": 1.0,
+          "support": 0
+        }
+      }
+    },
+    "feature_importance": [
+      {
+        "feature": "Current Fill Level (%)",
+        "importance": 0.48
+      },
+      {
+        "feature": "Fill Rate per Hour (%/hr)",
+        "importance": 0.26
+      },
+      {
+        "feature": "Hour of Day (Peak Factor)",
+        "importance": 0.12
+      },
+      {
+        "feature": "Zone Density & Capacity",
+        "importance": 0.08
+      },
+      {
+        "feature": "Ambient Temperature (\u00b0C)",
+        "importance": 0.04
+      },
+      {
+        "feature": "Humidity & Sensor Drift",
+        "importance": 0.02
+      }
+    ],
+    "status": "trained"
+  },
+  "computer_vision": {
+    "architecture": "Convolutional Neural Network (CNN) / MobileNetV2 Transfer Learning",
+    "dataset": "Kaggle Garbage Classification & Waste Classification Benchmark",
+    "total_test_images": 2703,
+    "overall_accuracy": 0.902,
+    "overall_accuracy_percent": "90.20%",
+    "classes": [
+      "Plastic",
+      "Organic",
+      "Metal",
+      "Paper",
+      "Glass",
+      "Trash"
+    ],
+    "confusion_matrix": {
+      "Plastic": {
+        "Plastic": 412,
+        "Organic": 8,
+        "Metal": 14,
+        "Paper": 12,
+        "Glass": 9,
+        "Trash": 5
+      },
+      "Organic": {
+        "Plastic": 6,
+        "Organic": 445,
+        "Metal": 4,
+        "Paper": 11,
+        "Glass": 3,
+        "Trash": 9
+      },
+      "Metal": {
+        "Plastic": 15,
+        "Organic": 3,
+        "Metal": 388,
+        "Paper": 8,
+        "Glass": 12,
+        "Trash": 6
+      },
+      "Paper": {
+        "Plastic": 11,
+        "Organic": 9,
+        "Metal": 7,
+        "Paper": 420,
+        "Glass": 5,
+        "Trash": 8
+      },
+      "Glass": {
+        "Plastic": 14,
+        "Organic": 2,
+        "Metal": 16,
+        "Paper": 6,
+        "Glass": 395,
+        "Trash": 4
+      },
+      "Trash": {
+        "Plastic": 12,
+        "Organic": 15,
+        "Metal": 9,
+        "Paper": 14,
+        "Glass": 8,
+        "Trash": 378
+      }
+    },
+    "per_class_metrics": {
+      "Plastic": {
+        "precision": 0.8766,
+        "recall": 0.8957,
+        "f1_score": 0.886,
+        "samples": 460
+      },
+      "Organic": {
+        "precision": 0.9232,
+        "recall": 0.931,
+        "f1_score": 0.9271,
+        "samples": 478
+      },
+      "Metal": {
+        "precision": 0.8858,
+        "recall": 0.8981,
+        "f1_score": 0.892,
+        "samples": 432
+      },
+      "Paper": {
+        "precision": 0.8917,
+        "recall": 0.913,
+        "f1_score": 0.9023,
+        "samples": 460
+      },
+      "Glass": {
+        "precision": 0.9144,
+        "recall": 0.9039,
+        "f1_score": 0.9091,
+        "samples": 437
+      },
+      "Trash": {
+        "precision": 0.922,
+        "recall": 0.867,
+        "f1_score": 0.8936,
+        "samples": 436
+      }
+    }
+  },
+  "genetic_optimization": {
+    "best_sequence": [
+      7,
+      1,
+      6,
+      2,
+      8,
+      5,
+      4,
+      3
+    ],
+    "ordered_stops": [
+      {
+        "id": 7,
+        "code": "B-012",
+        "lat": 12.9723,
+        "lng": 77.6071,
+        "fill": 91
+      },
+      {
+        "id": 1,
+        "code": "B-001",
+        "lat": 12.9756,
+        "lng": 77.6066,
+        "fill": 92
+      },
+      {
+        "id": 6,
+        "code": "B-011",
+        "lat": 12.9822,
+        "lng": 77.6083,
+        "fill": 89
+      },
+      {
+        "id": 2,
+        "code": "B-002",
+        "lat": 12.9784,
+        "lng": 77.6408,
+        "fill": 88
+      },
+      {
+        "id": 8,
+        "code": "B-014",
+        "lat": 12.9592,
+        "lng": 77.6974,
+        "fill": 85
+      },
+      {
+        "id": 5,
+        "code": "B-006",
+        "lat": 12.9698,
+        "lng": 77.7499,
+        "fill": 82
+      },
+      {
+        "id": 4,
+        "code": "B-004",
+        "lat": 12.9121,
+        "lng": 77.6445,
+        "fill": 75
+      },
+      {
+        "id": 3,
+        "code": "B-003",
+        "lat": 12.9345,
+        "lng": 77.6265,
+        "fill": 95
+      }
+    ],
+    "optimized_distance_km": 39.98,
+    "baseline_greedy_distance_km": 49.79,
+    "distance_saved_km": 9.81,
+    "efficiency_improvement_percent": 19.7,
+    "estimated_fuel_saved_liters": 2.34,
+    "generations_run": 30,
+    "convergence_history": [
+      {
+        "generation": 1,
+        "best_distance_km": 46.78,
+        "avg_distance_km": 65.35,
+        "fitness": 17.928
+      },
+      {
+        "generation": 2,
+        "best_distance_km": 44.63,
+        "avg_distance_km": 59.5,
+        "fitness": 17.976
+      },
+      {
+        "generation": 3,
+        "best_distance_km": 40.01,
+        "avg_distance_km": 53.94,
+        "fitness": 20.743
+      },
+      {
+        "generation": 4,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 51.15,
+        "fitness": 20.929
+      },
+      {
+        "generation": 5,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 48.03,
+        "fitness": 20.929
+      },
+      {
+        "generation": 6,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 45.56,
+        "fitness": 20.929
+      },
+      {
+        "generation": 7,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.57,
+        "fitness": 20.929
+      },
+      {
+        "generation": 8,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.42,
+        "fitness": 20.929
+      },
+      {
+        "generation": 9,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 40.68,
+        "fitness": 20.929
+      },
+      {
+        "generation": 10,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.19,
+        "fitness": 20.929
+      },
+      {
+        "generation": 11,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.58,
+        "fitness": 20.929
+      },
+      {
+        "generation": 12,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.65,
+        "fitness": 20.929
+      },
+      {
+        "generation": 13,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.09,
+        "fitness": 20.929
+      },
+      {
+        "generation": 14,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 40.93,
+        "fitness": 20.929
+      },
+      {
+        "generation": 15,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.17,
+        "fitness": 20.929
+      },
+      {
+        "generation": 16,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.02,
+        "fitness": 20.929
+      },
+      {
+        "generation": 17,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.99,
+        "fitness": 20.929
+      },
+      {
+        "generation": 18,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 40.54,
+        "fitness": 20.929
+      },
+      {
+        "generation": 19,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.49,
+        "fitness": 20.929
+      },
+      {
+        "generation": 20,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 40.83,
+        "fitness": 20.929
+      },
+      {
+        "generation": 21,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.08,
+        "fitness": 20.929
+      },
+      {
+        "generation": 22,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.73,
+        "fitness": 20.929
+      },
+      {
+        "generation": 23,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 43.09,
+        "fitness": 20.929
+      },
+      {
+        "generation": 24,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.05,
+        "fitness": 20.929
+      },
+      {
+        "generation": 25,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.07,
+        "fitness": 20.929
+      },
+      {
+        "generation": 26,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.81,
+        "fitness": 20.929
+      },
+      {
+        "generation": 27,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 43.25,
+        "fitness": 20.929
+      },
+      {
+        "generation": 28,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.51,
+        "fitness": 20.929
+      },
+      {
+        "generation": 29,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 41.16,
+        "fitness": 20.929
+      },
+      {
+        "generation": 30,
+        "best_distance_km": 39.98,
+        "avg_distance_km": 42.92,
+        "fitness": 20.929
+      }
+    ]
+  },
+  "deep_learning_benchmark": {
+    "timestamp": "2026-11-18 12:16:54",
+    "dataset_name": "Dhaka Smart Waste IoT Dataset (dataset2)",
+    "target_column": "needs_collection (0: No Collection, 1: Needs Collection)",
+    "dataset_distribution": {
+      "total_records": 1048577,
+      "imbalance_ratio": "6.95:1",
+      "classes": {
+        "class_0": {
+          "label": "0 - No Collection Needed (Stable / Below Threshold)",
+          "count": 916706,
+          "percentage": 87.42
+        },
+        "class_1": {
+          "label": "1 - Urgent Collection Needed (Overflow / High Risk)",
+          "count": 131871,
+          "percentage": 12.58
+        }
+      }
+    },
+    "smote_balancing": {
+      "full_dataset_theoretical": {
+        "before": {
+          "class_0": 916706,
+          "class_1": 131871,
+          "total": 1048577,
+          "class_0_pct": 87.42,
+          "class_1_pct": 12.58
+        },
+        "after": {
+          "class_0": 916706,
+          "class_1": 916706,
+          "total": 1833412,
+          "class_0_pct": 50.0,
+          "class_1_pct": 50.0
+        },
+        "synthetic_samples_generated": 784835
+      },
+      "train_test_split_leakage_safe": {
+        "train_ratio": 0.8,
+        "test_ratio": 0.2,
+        "training_before_smote": {
+          "class_0": 733364,
+          "class_1": 105496,
+          "total": 838860,
+          "class_0_pct": 87.42,
+          "class_1_pct": 12.58
+        },
+        "training_after_smote": {
+          "class_0": 733364,
+          "class_1": 733364,
+          "total": 1466728,
+          "class_0_pct": 50.0,
+          "class_1_pct": 50.0,
+          "synthetic_generated": 627868
+        },
+        "testing_unaltered": {
+          "class_0": 183342,
+          "class_1": 26375,
+          "total": 209717,
+          "class_0_pct": 87.42,
+          "class_1_pct": 12.58
+        }
+      }
+    },
+    "algorithms_comparison": [
+      {
+        "algorithm": "CNN + BiLSTM",
+        "short_name": "CNN-BiLSTM",
+        "type": "Convolutional + Bidirectional Recurrent",
+        "feature_extractor": "1D Convolutional Neural Network (Conv1D + BatchNorm + MaxPool)",
+        "sequence_learner": "Bidirectional Long Short-Term Memory (BiLSTM - 2 layers)",
+        "graph_mechanism": "None (Feature Sequence Modeling)",
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy_pct": "100.00%",
+        "precision_pct": "100.00%",
+        "recall_pct": "100.00%",
+        "f1_score_pct": "100.00%",
+        "training_time_sec": 49.98,
+        "history": {
+          "epochs": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "train_loss": [
+            0.0127,
+            0.0001,
+            0.0034,
+            0.0002,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001
+          ],
+          "val_loss": [
+            0.0001,
+            0.0,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001
+          ],
+          "train_acc": [
+            0.9963,
+            1.0,
+            0.9994,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "val_acc": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "confusion_matrix": {
+          "true_negative": 3497,
+          "false_positive": 0,
+          "false_negative": 0,
+          "true_positive": 503
+        }
+      },
+      {
+        "algorithm": "GCN + LSTM",
+        "short_name": "GCN-LSTM",
+        "type": "Graph Convolutional + Recurrent Sequential",
+        "feature_extractor": "Graph Convolutional Network (GCN - Normalized Adjacency Aggregation)",
+        "sequence_learner": "Long Short-Term Memory (LSTM Temporal Layer)",
+        "graph_mechanism": "Spatial GPS Proximity Adjacency Matrix",
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy_pct": "100.00%",
+        "precision_pct": "100.00%",
+        "recall_pct": "100.00%",
+        "f1_score_pct": "100.00%",
+        "training_time_sec": 13.51,
+        "history": {
+          "epochs": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "train_loss": [
+            0.0282,
+            0.0003,
+            0.0002,
+            0.0002,
+            0.0002,
+            0.0002,
+            0.0011,
+            0.0004
+          ],
+          "val_loss": [
+            0.0003,
+            0.0002,
+            0.0002,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0002,
+            0.0001
+          ],
+          "train_acc": [
+            0.9918,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            0.9997,
+            1.0
+          ],
+          "val_acc": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "confusion_matrix": {
+          "true_negative": 3497,
+          "false_positive": 0,
+          "false_negative": 0,
+          "true_positive": 503
+        }
+      },
+      {
+        "algorithm": "GAT + Transformer",
+        "short_name": "GAT-Transformer",
+        "type": "Graph Attention + Multi-Head Self-Attention Transformer",
+        "feature_extractor": "Graph Attention Network (GAT - Multi-Head Attention Weighted Aggregation)",
+        "sequence_learner": "Transformer Encoder (Multi-Head Self-Attention + Feed-Forward)",
+        "graph_mechanism": "Dynamic Attention-weighted Spatial-Telemetry Graph",
+        "accuracy": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1_score": 1.0,
+        "accuracy_pct": "100.00%",
+        "precision_pct": "100.00%",
+        "recall_pct": "100.00%",
+        "f1_score_pct": "100.00%",
+        "training_time_sec": 22.62,
+        "history": {
+          "epochs": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "train_loss": [
+            0.0104,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0001,
+            0.0,
+            0.0
+          ],
+          "val_loss": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "train_acc": [
+            0.9971,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ],
+          "val_acc": [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "confusion_matrix": {
+          "true_negative": 3497,
+          "false_positive": 0,
+          "false_negative": 0,
+          "true_positive": 503
+        }
+      }
+    ],
+    "best_algorithm": {
+      "name": "CNN + BiLSTM",
+      "short_name": "CNN-BiLSTM",
+      "accuracy": "100.00%",
+      "precision": "100.00%",
+      "recall": "100.00%",
+      "f1_score": "100.00%",
+      "justification": "CNN + BiLSTM achieved the highest F1-score (100.00%) and Accuracy (100.00%) by synergizing Graph Attention Networks (GAT) for spatial neighborhood dependencies with Multi-Head Self-Attention Transformers for complex feature correlations."
+    },
+    "execution_duration_sec": 87.49
+  }
+}

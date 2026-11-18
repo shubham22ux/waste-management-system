@@ -5,6 +5,10 @@
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "seed": "npm run seed --prefix server",
+    "ai:train": "python ai/run_ai_pipeline.py",
+    "ai:dataset2": "python ai/run_dataset2.py",
+    "ai:eval": "python ai/run_ai_pipeline.py",
+    "ai:import": "python ai/import_downloaded_datasets.py",
     "install:all": "npm install && npm install --prefix server && npm install --prefix client"
   },
   "devDependencies": {

@@ -18,11 +18,13 @@ import {
   Send,
   Sparkles,
   X,
-  BarChart3
+  BarChart3,
+  Brain
 } from 'lucide-react';
 
 const adminNavigation = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+  { name: 'AI Intelligence Hub', path: '/ai-hub', icon: Brain },
   { name: 'Bins', path: '/bins', icon: Trash2 },
   { name: 'Routes', path: '/routes', icon: Route },
   { name: 'Drivers', path: '/drivers', icon: Users },
@@ -40,6 +42,7 @@ const driverNavigation = [
 ];
 
 const citizenNavigation = [
+  { name: 'AI Waste Scanner', path: '/ai-hub', icon: Brain },
   { name: 'Report Complaint', path: '/citizen/report', icon: Send },
   { name: 'My Complaints', path: '/citizen/complaints', icon: FileText },
   { name: 'Nearby Bins', path: '/citizen/bins', icon: MapPin },

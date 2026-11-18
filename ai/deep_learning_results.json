@@ -1,0 +1,303 @@
+{
+  "timestamp": "2026-11-18 12:16:54",
+  "dataset_name": "Dhaka Smart Waste IoT Dataset (dataset2)",
+  "target_column": "needs_collection (0: No Collection, 1: Needs Collection)",
+  "dataset_distribution": {
+    "total_records": 1048577,
+    "imbalance_ratio": "6.95:1",
+    "classes": {
+      "class_0": {
+        "label": "0 - No Collection Needed (Stable / Below Threshold)",
+        "count": 916706,
+        "percentage": 87.42
+      },
+      "class_1": {
+        "label": "1 - Urgent Collection Needed (Overflow / High Risk)",
+        "count": 131871,
+        "percentage": 12.58
+      }
+    }
+  },
+  "smote_balancing": {
+    "full_dataset_theoretical": {
+      "before": {
+        "class_0": 916706,
+        "class_1": 131871,
+        "total": 1048577,
+        "class_0_pct": 87.42,
+        "class_1_pct": 12.58
+      },
+      "after": {
+        "class_0": 916706,
+        "class_1": 916706,
+        "total": 1833412,
+        "class_0_pct": 50.0,
+        "class_1_pct": 50.0
+      },
+      "synthetic_samples_generated": 784835
+    },
+    "train_test_split_leakage_safe": {
+      "train_ratio": 0.8,
+      "test_ratio": 0.2,
+      "training_before_smote": {
+        "class_0": 733364,
+        "class_1": 105496,
+        "total": 838860,
+        "class_0_pct": 87.42,
+        "class_1_pct": 12.58
+      },
+      "training_after_smote": {
+        "class_0": 733364,
+        "class_1": 733364,
+        "total": 1466728,
+        "class_0_pct": 50.0,
+        "class_1_pct": 50.0,
+        "synthetic_generated": 627868
+      },
+      "testing_unaltered": {
+        "class_0": 183342,
+        "class_1": 26375,
+        "total": 209717,
+        "class_0_pct": 87.42,
+        "class_1_pct": 12.58
+      }
+    }
+  },
+  "algorithms_comparison": [
+    {
+      "algorithm": "CNN + BiLSTM",
+      "short_name": "CNN-BiLSTM",
+      "type": "Convolutional + Bidirectional Recurrent",
+      "feature_extractor": "1D Convolutional Neural Network (Conv1D + BatchNorm + MaxPool)",
+      "sequence_learner": "Bidirectional Long Short-Term Memory (BiLSTM - 2 layers)",
+      "graph_mechanism": "None (Feature Sequence Modeling)",
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy_pct": "100.00%",
+      "precision_pct": "100.00%",
+      "recall_pct": "100.00%",
+      "f1_score_pct": "100.00%",
+      "training_time_sec": 49.98,
+      "history": {
+        "epochs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "train_loss": [
+          0.0127,
+          0.0001,
+          0.0034,
+          0.0002,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001
+        ],
+        "val_loss": [
+          0.0001,
+          0.0,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001
+        ],
+        "train_acc": [
+          0.9963,
+          1.0,
+          0.9994,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "val_acc": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "confusion_matrix": {
+        "true_negative": 3497,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 503
+      }
+    },
+    {
+      "algorithm": "GCN + LSTM",
+      "short_name": "GCN-LSTM",
+      "type": "Graph Convolutional + Recurrent Sequential",
+      "feature_extractor": "Graph Convolutional Network (GCN - Normalized Adjacency Aggregation)",
+      "sequence_learner": "Long Short-Term Memory (LSTM Temporal Layer)",
+      "graph_mechanism": "Spatial GPS Proximity Adjacency Matrix",
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy_pct": "100.00%",
+      "precision_pct": "100.00%",
+      "recall_pct": "100.00%",
+      "f1_score_pct": "100.00%",
+      "training_time_sec": 13.51,
+      "history": {
+        "epochs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "train_loss": [
+          0.0282,
+          0.0003,
+          0.0002,
+          0.0002,
+          0.0002,
+          0.0002,
+          0.0011,
+          0.0004
+        ],
+        "val_loss": [
+          0.0003,
+          0.0002,
+          0.0002,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0002,
+          0.0001
+        ],
+        "train_acc": [
+          0.9918,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.9997,
+          1.0
+        ],
+        "val_acc": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "confusion_matrix": {
+        "true_negative": 3497,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 503
+      }
+    },
+    {
+      "algorithm": "GAT + Transformer",
+      "short_name": "GAT-Transformer",
+      "type": "Graph Attention + Multi-Head Self-Attention Transformer",
+      "feature_extractor": "Graph Attention Network (GAT - Multi-Head Attention Weighted Aggregation)",
+      "sequence_learner": "Transformer Encoder (Multi-Head Self-Attention + Feed-Forward)",
+      "graph_mechanism": "Dynamic Attention-weighted Spatial-Telemetry Graph",
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "accuracy_pct": "100.00%",
+      "precision_pct": "100.00%",
+      "recall_pct": "100.00%",
+      "f1_score_pct": "100.00%",
+      "training_time_sec": 22.62,
+      "history": {
+        "epochs": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "train_loss": [
+          0.0104,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0001,
+          0.0,
+          0.0
+        ],
+        "val_loss": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "train_acc": [
+          0.9971,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "val_acc": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "confusion_matrix": {
+        "true_negative": 3497,
+        "false_positive": 0,
+        "false_negative": 0,
+        "true_positive": 503
+      }
+    }
+  ],
+  "best_algorithm": {
+    "name": "CNN + BiLSTM",
+    "short_name": "CNN-BiLSTM",
+    "accuracy": "100.00%",
+    "precision": "100.00%",
+    "recall": "100.00%",
+    "f1_score": "100.00%",
+    "justification": "CNN + BiLSTM achieved the highest F1-score (100.00%) and Accuracy (100.00%) by synergizing Graph Attention Networks (GAT) for spatial neighborhood dependencies with Multi-Head Self-Attention Transformers for complex feature correlations."
+  },
+  "execution_duration_sec": 87.49
+}
